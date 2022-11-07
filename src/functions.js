@@ -312,13 +312,15 @@ export function formatDateString(dateString){
 
 
 export function dateFormat(stringFormat,dateString){
-    let dateParse = dateString.match('[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+:[0-9]+')[0];
+    let dateParse;
+    try{ dateParse = dateString.match(/([0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+:[0-9]+)|([0-9]+-[0-9]+-[0-9]+)|([0-9]+:[0-9]+:[0-9]+)/g)[0];}
+    catch(err){return;}
     dateParse = dateParse.replaceAll('-','/');
     let date = new Date(Date.parse(dateParse));
     let months = ['January','February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     let dateFormat = stringFormat.replaceAll('%y',date.getFullYear());
     dateFormat = dateFormat.replaceAll('%d',date.getDate());
-    dateFormat = dateFormat.replaceAll('%lm',months[date.getMonth() + 1]);
+    dateFormat = dateFormat.replaceAll('%lm',months[date.getMonth()]);
     dateFormat = dateFormat.replaceAll('%m',date.getMonth()+1);
     dateFormat = (date.getMinutes() >= 10) ?  dateFormat.replaceAll('%i',date.getMinutes()) : dateFormat.replaceAll('%i',"0"+date.getMinutes());
     dateFormat = (date.getSeconds() >= 10) ?  dateFormat.replaceAll('%s',date.getSeconds()) : dateFormat.replaceAll('%s',"0"+date.getSeconds());

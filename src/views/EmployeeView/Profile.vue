@@ -6,7 +6,7 @@
             </ion-buttons>
             <ion-header>Profile</ion-header>
             <ion-avatar>
-                <img src="@/images/profile.svg"/>
+                <img :src="user.profile_img"/>
                 <ion-buttons class="camera-icon">
                     <ion-icon :icon="camera"></ion-icon>
                 </ion-buttons>
@@ -116,7 +116,7 @@ ion-header {
 
 ion-avatar {
     width: 150px;
-    height: auto;
+    height: 150px;
     position: relative;
     margin: 20px auto 0;
     text-align: center;

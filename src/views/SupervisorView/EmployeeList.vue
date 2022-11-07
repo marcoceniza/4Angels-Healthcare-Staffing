@@ -29,7 +29,7 @@
             <ion-list class="ion-margin-top listEmployee ion-margin-top">
                 <ion-item v-for="employeeList in employeeList" :key="employeeList.id" v-show="employeeList.role == role || role == ''" button>
                     <ion-avatar slot="start">
-                        <ion-img src="https://i.pravatar.cc/300?u=b"></ion-img>
+                        <ion-img :src="employeeList.profile_img"></ion-img>
                     </ion-avatar>
                     <ion-label>
                         <h2>{{ employeeList.firstname }} {{ employeeList.lastname }}</h2>

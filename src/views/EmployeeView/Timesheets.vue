@@ -4,7 +4,7 @@
             <ion-toolbar class="main-header">
                 <ion-buttons slot="end">
                     <ion-avatar @click="$router.push('/employee/profile')">
-                        <img src="@/images/profile.svg"/>
+                        <img :src="user.profile_img"/>
                     </ion-avatar>
                 </ion-buttons>
                 <ion-title>Timesheets</ion-title>
@@ -23,6 +23,7 @@
                         <p>Clock Out: 6:30 pm</p>
                     </ion-label>
                 </ion-item>
+
                 <ion-item button lines="none" @click="setOpen(true)">
                     <ion-label>
                         <h1>Facility 2</h1>
@@ -49,10 +50,10 @@
                         <ion-card class="ion-text-center attend_profile">
                             <ion-card-header>
                                 <ion-avatar>
-                                    <img src="@/images/profile.svg"/>
+                                    <img :src="user.profile_img"/>
                                 </ion-avatar>
-                                <ion-card-title>John Doe</ion-card-title>
-                                <ion-card-subtitle>Employee</ion-card-subtitle>
+                                <ion-card-title>{{ user.firstname }} {{ user.lastname }}</ion-card-title>
+                                <ion-card-subtitle>{{ user.role }}</ion-card-subtitle>
                             </ion-card-header>
                         </ion-card>
                     </ion-toolbar>
@@ -62,21 +63,21 @@
                         <ion-icon :icon="person" slot="start"></ion-icon>
                         <ion-label>
                             <h3>Name</h3>
-                            <p>John Doe</p>
+                            <p>{{ user.firstname }} {{ user.lastname }}</p>
                         </ion-label>
                     </ion-item>
                     <ion-item lines="full">
                         <ion-icon :icon="briefcase" slot="start"></ion-icon>
                         <ion-label>
                             <h3>Position</h3>
-                            <p>Nurse Assistant</p>
+                            <p>{{ user.role }}</p>
                         </ion-label>
                     </ion-item>
                     <ion-item lines="full">
                         <ion-icon :icon="map" slot="start"></ion-icon>
                         <ion-label>
                             <h3>Location</h3>
-                            <p>Facility 1</p>
+                            <p>{{ user.address }}</p>
                         </ion-label>
                     </ion-item>
                     <ion-item lines="full">
@@ -105,6 +106,7 @@
 import { defineComponent } from 'vue';
 import { IonContent, IonPage, IonHeader, IonToolbar, menuController, IonDatetime, IonModal, IonTitle } from '@ionic/vue';
 import { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, menu, close, arrowBack, person, briefcase, time, timer } from 'ionicons/icons';
+import { lStore } from '@/functions';
 
 export default defineComponent({
     name: 'TmesheetsView',
@@ -126,8 +128,12 @@ export default defineComponent({
             message: null,
             noProfilePic: false,
             isOpen: false,
-            getDayToday: ''
+            getDayToday: '',
+            user: {}
         }
+    },
+    created() {
+        this.user = lStore.get('user_info');
     },
     mounted() {
         const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];

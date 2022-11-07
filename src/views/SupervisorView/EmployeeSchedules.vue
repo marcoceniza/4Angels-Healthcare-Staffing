@@ -19,7 +19,7 @@
             <ion-list class="data-list">
                 <ion-item v-for="schedule in filteredFacility" :key="schedule" button @click="setOpen(true); selectedEmployee = schedule">
                     <ion-avatar slot="start">
-                        <ion-img :src="user.profile_img"></ion-img>
+                        <ion-img :src="schedule.profile_img"></ion-img>
                     </ion-avatar>
                     <ion-label>
                         <h2>{{ schedule.firstname }} {{ schedule.lastname }}</h2>
@@ -41,7 +41,7 @@
                         <ion-card class="ion-text-center attend_profile">
                             <ion-card-header>
                                 <ion-avatar>
-                                    <img src="@/images/profile.svg"/>
+                                    <img :src="selectedEmployee.profile_img"/>
                                 </ion-avatar>
                                 <ion-card-title>{{ selectedEmployee.firstname }} {{ selectedEmployee.lastname }}</ion-card-title>
                                 <ion-card-subtitle>{{ selectedEmployee.role }}</ion-card-subtitle>

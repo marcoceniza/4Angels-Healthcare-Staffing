@@ -29,7 +29,7 @@
                 <ion-menu-button slot="start"></ion-menu-button>
                 <ion-buttons slot="end">
                     <ion-avatar @click="$router.push('/employee/profile')">
-                        <img src="@/images/profile.svg"/>
+                        <img :src="user.profile_img"/>
                     </ion-avatar>
                 </ion-buttons>
             </ion-toolbar>
@@ -56,8 +56,17 @@
                     </ion-label>
                 </ion-item>
             </ion-list>
+
+            <ion-segment class="segment-class" color="primary" @ionChange="scheduleData($event)">
+                <ion-segment-button value="todays-schedule">
+                    <ion-label>Today's Schedule</ion-label>
+                </ion-segment-button>
+                <ion-segment-button value="upcoming-schedule">
+                    <ion-label>Upcoming Schedule</ion-label>
+                </ion-segment-button>
+            </ion-segment>
             
-            <ion-list class="ion-margin-top ion-margin-bottom">
+            <ion-list class="ion-margin-top ion-margin-bottom" :class="{ today: todays }">
                 <ion-item lines="full">
                     <ion-label color="primary">Schedule Today</ion-label>
                     <ion-icon color="primary" :icon="reader" slot="end"></ion-icon>
@@ -81,6 +90,8 @@
                     </ion-label>
                 </ion-item>
             </ion-list>
+
+            <p :class="{ upcoming: upcomings }">Coming soon...</p>
 
             <ion-grid class="title">
                 <ion-row class="ion-text-center">
@@ -123,13 +134,13 @@
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, menuController, actionSheetController, loadingController, IonButtons, IonMenu, IonMenuButton } from '@ionic/vue';
+import { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, menuController, actionSheetController, loadingController, IonButtons, IonMenu, IonMenuButton, IonSegment, IonSegmentButton } from '@ionic/vue';
 import { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, menu, reader, checkmarkCircle, location, time, calendar, calendarClear, navigate, person } from 'ionicons/icons';
 import { lStore, axios } from '@/functions';
 
 export default defineComponent({
     name: 'DashboardView',
-    components: { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonButtons, IonMenu, IonMenuButton },
+    components: { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonButtons, IonMenu, IonMenuButton, IonSegment, IonSegmentButton },
     setup() {
         const logScrolling = (e) => {
             if (e.detail.scrollTop >= 20) {
@@ -155,7 +166,9 @@ export default defineComponent({
             timeData: '',
             hours: '',
             minutes: '',
-            seconds: ''
+            seconds: '',
+            todays: false,
+            upcomings: true
         }
     },
     created() {
@@ -194,6 +207,17 @@ export default defineComponent({
 
     },
     methods: {
+        scheduleData(e) {
+            if(e.detail.value == 'todays-schedule') {
+                this.todays = false;
+                this.upcomings = true;
+            }
+
+            if(e.detail.value == 'upcoming-schedule') {
+                this.todays = true;
+                this.upcomings = false;
+            }
+        },
         async openLoader() {
             const loading = await loadingController.create({
                 message: 'Logging Out...',
@@ -296,6 +320,8 @@ export default defineComponent({
 <style scoped>
 
 .disabled2,.disabled{pointer-events: none;}
+.today {display: none;}
+.upcoming {display: none;}
 
 ion-menu ion-content {
     background: #fff;
@@ -594,6 +620,10 @@ ion-menu ion-item {
 
 .title {
     margin-top: 45px;
+}
+
+.segment-class {
+    margin-top: 25px;
 }
 
 </style>

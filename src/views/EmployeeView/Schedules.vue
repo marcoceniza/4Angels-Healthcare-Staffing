@@ -4,46 +4,25 @@
             <ion-toolbar class="main-header">
                 <ion-buttons slot="end">
                     <ion-avatar @click="$router.push('/supervisor/profile')">
-                        <img src="@/images/profile.svg"/>
+                        <img :src="user.profile_img"/>
                     </ion-avatar>
                 </ion-buttons>
                 <ion-title>Schedules</ion-title>
             </ion-toolbar>
             <ion-toolbar class="sub-header sub-header2 ion-padding-bottom">
-                <ion-datetime presentation="date"></ion-datetime>
+                <ion-datetime @ionChange="setDate" presentation="date"></ion-datetime>
             </ion-toolbar>
         </ion-header>
         <ion-content fullscreen="true">
 
-            <ion-modal :is-open="isOpen">
-                <ion-header>
-                    <ion-toolbar>
-                        <ion-title>Option</ion-title>
-                        <ion-buttons slot="end">
-                            <ion-button @click="isOpen = false" color="light">Close</ion-button>
-                        </ion-buttons>
-                    </ion-toolbar>
-                </ion-header>
-                <ion-content class="ion-padding">
-                    <ion-grid>
-                        <ion-row>
-                            <ion-col size="6">
-                                <ion-button color="primary" shape="round" expand="full">Accept</ion-button>
-                            </ion-col>
-                            <ion-col size="6">
-                                <ion-button color="success" shape="round" expand="full">Change</ion-button>
-                            </ion-col>
-                        </ion-row>
-                    </ion-grid>
-                </ion-content>
-            </ion-modal>
-
-            <ion-list class="ion-margin-top">
-                <ion-item button lines="none" @click="setOpen">
+            <ion-list class="ion-margin-top" v-for="st in schedulesToday" :key="st.id" :class="{schedTaken: takenSchedulesToday.includes(st.id)}">
+                <ion-item button lines="none" @click="openActionSheet(st.id)">
                     <ion-label>
-                        <h1>Morning Shift</h1>
-                        <p>Facility 1</p>
-                        <p>Render Time: 8 hrs</p>
+                        <h1>{{st.title}}</h1>
+                        <p>{{st.name}}</p>
+                        <p>Start Time: {{dateFormat('%h:%i%a',selectedDate+' '+st.shift_start)}}</p>
+                        <p>End Time: {{dateFormat('%h:%i%a',selectedDate+' '+st.shift_end)}}</p>
+                        <p>Date: {{dateFormat('%lm %d, %y',selectedDate)}}</p>
                     </ion-label>
                 </ion-item>
             </ion-list>
@@ -54,13 +33,13 @@
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonHeader, IonToolbar, menuController, IonDatetime, loadingController, actionSheetController, IonTitle, IonModal, IonButtons, IonButton } from '@ionic/vue';
+import { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, actionSheetController, IonTitle, IonButtons } from '@ionic/vue';
 import { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, menu } from 'ionicons/icons';
-import { axios } from '@/functions';
+import { axios, lStore,dateFormat } from '@/functions';
 
 export default defineComponent({
     name: 'SchedulesView',
-    components: { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, IonTitle, IonModal, IonButtons, IonButton },
+    components: { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, IonTitle, IonButtons },
     setup() {
         const logScrolling2 = (e) => {
             if (e.detail.scrollTop >= 50) {
@@ -79,17 +58,24 @@ export default defineComponent({
             task: null,
             message: null,
             availableSchedules: [{}],
+            schedulesToday:[],
+            takenSchedulesToday: [],
             noProfilePic: false,
+            selectedDate:'2022-01-01',
             user: {},
             facility: '',
             getMonthToday: '',
             isOpen: false,
         }
     },
+    created() {
+        this.user = lStore.get('user_info');
+    },
     mounted() {
         const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
         let month = months[new Date().getMonth()].toUpperCase();
         this.getMonthToday = month;
+        this.selectedDate = new Date().toLocaleDateString();
 
         this.availableSchedules = [];
         axios.post('users?_batch=true').catch(res=>{
@@ -104,24 +90,23 @@ export default defineComponent({
         });
     },
     methods: {
-        async openLoader() {
-            const loading = await loadingController.create({
-                message: 'Logging Out...',
-                cssClass: 'custom-loading'
-            });
-            return loading.present();
-        },
-        async openActionSheet() {
+        dateFormat,
+        async openActionSheet(id) {
             const openSheet = await actionSheetController.create({
-                header: 'Are you sure you want to log out?',
+                header: 'Schedule Action',
                 buttons: [
                     {
-                        text: 'Log Out',
+                        text: 'Apply Shift',
                         role: 'destructive',
-                        handler: () => {
-                            this.openLoader().then(()=>{
-                                this.logout();
-                            });
+                        data: {
+                            action: 'apply',
+                        },
+                    },
+                    {
+                        text: 'Request Change',
+                        role: 'destructive',
+                        data: {
+                            action: 'request change',
                         },
                     },
                     {
@@ -133,25 +118,54 @@ export default defineComponent({
                     },
                 ],
             });
-            return openSheet.present();
-        },
-        async presentActionSheet() {
-            this.openActionSheet();
-        },
-        logout() {
-            localStorage.clear();
-            this.$router.push('/login');
-            loadingController.dismiss();
-        },
-        openMenu() {
-            menuController.open('app-menu');
-        },
-        closeMenu() {
-            menuController.close('app-menu');
+
+            await openSheet.present();
+            openSheet.onDidDismiss().then(res=>{
+                if(res.data == null) return;
+                if(res.data.action == 'cancel') return;
+                if(res.data.action == 'apply') {
+                    axios.post('assigned/create',null,{
+                        user_id: lStore.get('user_id'),
+                        schedule_id: id
+                    }).then(res2=>{
+                        console.log(res2.data);
+                    })
+                }
+            });
+
         },
         setOpen() {
             this.isOpen = true;
         },
+        setDate(e){
+            let date = e.target.value.match(/^[0-9]+-[0-9]+-[0-9]+/)[0];
+            this.selectedDate = date;
+            axios.post(`schedule?_LSE_shift_date=${date}&_GTE_shift_date_end=${date}&_batch=true&_joins=mobile_branches&_on=mobile_schedule.branch_id=mobile_branches.id
+            &_select=mobile_schedule.id,
+            mobile_schedule.title,
+            mobile_schedule.shift_start,
+            mobile_schedule.shift_end,
+            mobile_schedule.shift_date,
+            mobile_schedule.shift_date_end,
+            mobile_branches.name`).then(res=>{
+                if(res.data.result == null) {
+                    this.schedulesToday = [];
+                    return;
+                }
+                this.schedulesToday = res.data.result;
+                
+                this.takenSchedulesToday = [];
+                this.schedulesToday.forEach(el=>{
+                    axios.post('assigned?user_id='+lStore.get('user_id')+'&schedule_id='+el.id,null,null).then(res=>{
+                        if(res.data.result == null) return;
+                        this.takenSchedulesToday.push(el.id);
+                    })
+                })
+
+                this.takenSchedulesToday = this.schedulesToday.filter(el=>this.takenSchedulesToday.includes(el.id));
+                console.log(this.takenSchedulesToday);
+            })
+        }
     }
 });
 </script>
@@ -174,7 +188,7 @@ ion-menu ion-list {
 
 ion-menu ion-content ion-item {
     font-size: 18px;
-    color: #aa0927;
+    color: #1f94db;
     --padding-start: 30px;
     --padding-end: 30px;
     --padding-top: 15px;
@@ -355,5 +369,10 @@ ion-select {
     font-size: 25px;
     color: #fff;
     display: block;
+}
+
+.schedTaken{
+    border-top: 3px dashed #1f94db;
+border-bottom: 3px dashed #1f94db;
 }
 </style>
