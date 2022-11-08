@@ -372,7 +372,7 @@ ion-select {
 }
 
 .schedTaken{
-    border-top: 3px dashed #1f94db;
-border-bottom: 3px dashed #1f94db;
+    pointer-events: none;
+    opacity: 0.5;
 }
 </style>
