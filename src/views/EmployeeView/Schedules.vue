@@ -171,34 +171,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-ion-menu ion-content {
-    background: #fff;
-    --background: #fff;
-    --padding-top: 60px;
-    --padding-bottom: 60px;
-    --padding-start: 0;
-    --padding-end: 0;
-    --inner-padding-start: 0;
-    --inner-padding-end: 0;
-}
-
-ion-menu ion-list {
-    padding: 0;
-}
-
-ion-menu ion-content ion-item {
-    font-size: 18px;
-    color: #1f94db;
-    --padding-start: 30px;
-    --padding-end: 30px;
-    --padding-top: 15px;
-    --padding-bottom: 15px;
-    --inner-padding-start: 0;
-    --inner-padding-end: 0;
-    --inner-border-width: 0;
-    padding: 0;
-    margin: 0;
-}
 
 ion-menu ion-content ion-item ion-label {
     margin: 0;
