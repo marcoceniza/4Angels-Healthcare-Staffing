@@ -91,7 +91,17 @@
                 </ion-item>
             </ion-list>
 
-            <p :class="{ upcoming: upcomings }">Coming soon...</p>
+            <ion-list :class="{ upcoming: upcomings }">
+                <ion-item v-for="upSchedule in upcoming" :key="upSchedule.user_id">
+                    <ion-label>
+                        <h1>{{ upSchedule.title }}</h1>
+                        <p>{{ upSchedule.name }}</p>
+                        <p>{{ upSchedule.shift_date }}</p>
+                        <p>{{ upSchedule.shift_start }}</p>
+                        <p>{{ upSchedule.shift_end }}</p>
+                    </ion-label>
+                </ion-item>
+            </ion-list>
 
             <ion-grid class="title">
                 <ion-row class="ion-text-center">
@@ -136,7 +146,7 @@
 import { defineComponent } from 'vue';
 import { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, menuController, actionSheetController, loadingController, IonButtons, IonMenu, IonMenuButton, IonSegment, IonSegmentButton } from '@ionic/vue';
 import { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, menu, reader, checkmarkCircle, location, time, calendar, calendarClear, navigate, person } from 'ionicons/icons';
-import { lStore, axios } from '@/functions';
+import { lStore, axios, formatDateString } from '@/functions';
 
 export default defineComponent({
     name: 'DashboardView',
@@ -168,7 +178,8 @@ export default defineComponent({
             minutes: '',
             seconds: '',
             todays: false,
-            upcomings: true
+            upcomings: true,
+            upcoming: [{}]
         }
     },
     created() {
@@ -204,6 +215,17 @@ export default defineComponent({
             this.disabled = true;
             this.clockOut = new Date(lStore.get('timerecord_timeout').time_out).toLocaleTimeString();
         }
+
+        let currentDate = new Date();
+        let currentDateString = currentDate.toLocaleDateString().split('/');
+        currentDateString = formatDateString(currentDateString[2] + '-' + currentDateString[0] + '-' + currentDateString[1]).replaceAll(' ','');
+
+        let currentTimeString = currentDate.toLocaleTimeString('en-US',{hour12:false});
+
+        axios.post(`assigned?user_id=${lStore.get('user_id')}&_batch=true&_joins=mobile_schedule,mobile_branches&_on=mobile_assignedusers.schedule_id=mobile_schedule.id,mobile_schedule.branch_id=mobile_branches.id&_GTE_mobile_schedule:shift_date=${currentDateString}&_GTE_mobile_schedule:shift_start=${currentTimeString}&`).then(res=>{
+            this.upcoming = res.data.result;
+            console.log(res.data.result);
+        })
 
     },
     methods: {

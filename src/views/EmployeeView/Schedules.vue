@@ -57,7 +57,6 @@ export default defineComponent({
             formLoading1: false,
             task: null,
             message: null,
-            availableSchedules: [{}],
             schedulesToday:[],
             takenSchedulesToday: [],
             noProfilePic: false,
@@ -76,18 +75,6 @@ export default defineComponent({
         let month = months[new Date().getMonth()].toUpperCase();
         this.getMonthToday = month;
         this.selectedDate = new Date().toLocaleDateString();
-
-        this.availableSchedules = [];
-        axios.post('users?_batch=true').catch(res=>{
-            console.log(res);
-        }).then(res=>{
-            res.data.result.forEach(el => {
-                axios.post("users?id="+el.id+"&_joins=mobile_branchusers,mobile_designation,mobile_branches&_on=mobile_users.id=mobile_branchusers.user_id,mobile_users.designation_id=mobile_designation.id,mobile_branchusers.branch_id=mobile_branches.id&_batch=true").catch(res=>{
-                    console.log(res);
-                })
-                this.availableSchedules.push(el); 
-            });
-        });
     },
     methods: {
         dateFormat,
@@ -343,8 +330,8 @@ ion-select {
     display: block;
 }
 
-.schedTaken{
+/* .schedTaken{
     pointer-events: none;
     opacity: 0.5;
-}
+} */
 </style>

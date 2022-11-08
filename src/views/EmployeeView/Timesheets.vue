@@ -10,33 +10,17 @@
                 <ion-title>Timesheets</ion-title>
             </ion-toolbar>
             <ion-toolbar class="sub-header sub-header3 ion-padding-bottom">
-                <ion-datetime presentation="date"></ion-datetime>
+                <ion-datetime @ionChange="setDate" presentation="date"></ion-datetime>
             </ion-toolbar>
         </ion-header>
         <ion-content fullscreen="true">
 
             <ion-list class="ion-margin-top">
-                <ion-item button lines="none" @click="setOpen(true)">
+                <ion-item v-for="test in timesheets" :key="test.user_id">
                     <ion-label>
-                        <h1>Facility 1</h1>
-                        <p>Clock In: 7:00 am</p>
-                        <p>Clock Out: 6:30 pm</p>
-                    </ion-label>
-                </ion-item>
-
-                <ion-item button lines="none" @click="setOpen(true)">
-                    <ion-label>
-                        <h1>Facility 2</h1>
-                        <p>Clock In: 7:00 am</p>
-                        <p>Clock Out: 6:30 pm</p>
-                    </ion-label>
-                </ion-item>
-
-                <ion-item button lines="none" @click="setOpen(true)">
-                    <ion-label>
-                        <h1>Facility 3</h1>
-                        <p>Clock In: 7:00 am</p>
-                        <p>Clock Out: 6:30 pm</p>
+                        <h1>{{ test.name }}</h1>
+                        <p>Clock In: {{ dateFormat('%h:%i%a',test.time_in) }}</p>
+                        <p>Clock Out: {{ dateFormat('%h:%i%a',test.time_out) }}</p>
                     </ion-label>
                 </ion-item>
             </ion-list>
@@ -106,7 +90,7 @@
 import { defineComponent } from 'vue';
 import { IonContent, IonPage, IonHeader, IonToolbar, menuController, IonDatetime, IonModal, IonTitle } from '@ionic/vue';
 import { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, menu, close, arrowBack, person, briefcase, time, timer } from 'ionicons/icons';
-import { lStore } from '@/functions';
+import { lStore, axios, dateFormat, formatDateString } from '@/functions';
 
 export default defineComponent({
     name: 'TmesheetsView',
@@ -129,7 +113,9 @@ export default defineComponent({
             noProfilePic: false,
             isOpen: false,
             getDayToday: '',
-            user: {}
+            user: {},
+            timesheets: [{}],
+            selectedDate : ''
         }
     },
     created() {
@@ -139,8 +125,18 @@ export default defineComponent({
         const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
         let day = days[new Date().getDay()].toUpperCase();
         this.getDayToday = day;
+
+        let currentDate = new Date();
+        let tommDate = new Date();
+        tommDate.setDate(tommDate.getDate()+1);
+
+        axios.post(`timerecord?user_id=${lStore.get('user_id')}&_joins=mobile_branches&_on=mobile_timerecord.branch_id=mobile_branches.id&_batch=true&_GTE_time_in=${currentDate.toLocaleDateString()}&_LSE_time_out=${tommDate.toLocaleDateString()}`).then(res=>{
+            this.timesheets = res.data.result;
+        })
+
     },
     methods: {
+        dateFormat,
         setOpen(isOpen) {
             this.isOpen = isOpen;
         },
@@ -149,6 +145,23 @@ export default defineComponent({
         },
         closeMenu() {
             menuController.close('app-menu');
+        },
+        setDate(e){
+            let date = e.target.value.match(/^[0-9]+-[0-9]+-[0-9]+/)[0];
+            this.selectedDate = date;
+
+            let currentDate = new Date(date).toLocaleDateString();
+            let tommDate = new Date(date);
+            tommDate.setDate(tommDate.getDate()+1);
+            tommDate = tommDate.toLocaleDateString();
+            let currentDateArr = currentDate.split('/');
+            let tommDateArr = tommDate.split('/');
+            currentDate = formatDateString(currentDateArr[2]+'-'+currentDateArr[0]+'-'+currentDateArr[1]).replaceAll(' ','');
+            tommDate = formatDateString(tommDateArr[2]+'-'+tommDateArr[0]+'-'+tommDateArr[1]).replaceAll(' ','');
+            
+            axios.post(`timerecord?user_id=${lStore.get('user_id')}&_joins=mobile_branches&_on=mobile_timerecord.branch_id=mobile_branches.id&_batch=true&_GTE_time_in=${currentDate}&_LSE_time_out=${tommDate}`).then(res=>{
+                this.timesheets = res.data.result;
+            })
         }
     }
 });
@@ -168,20 +181,6 @@ ion-menu ion-content {
 
 ion-menu ion-list {
     padding: 0;
-}
-
-ion-menu ion-content ion-item {
-    font-size: 18px;
-    color: #aa0927;
-    --padding-start: 30px;
-    --padding-end: 30px;
-    --padding-top: 15px;
-    --padding-bottom: 15px;
-    --inner-padding-start: 0;
-    --inner-padding-end: 0;
-    --inner-border-width: 0;
-    padding: 0;
-    margin: 0;
 }
 
 ion-menu ion-content ion-item ion-label {
