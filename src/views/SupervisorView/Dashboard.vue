@@ -97,7 +97,7 @@
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, menuController, IonText, actionSheetController, loadingController, IonMenu, IonMenuButton, IonGrid, IonRow, IonCol } from '@ionic/vue';
+import { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, menuController, IonText, actionSheetController, IonMenu, IonMenuButton, IonGrid, IonRow, IonCol } from '@ionic/vue';
 import { lStore, axios } from '@/functions';
 import { personCircle, menu, calendarClear, navigate, person, calendar } from 'ionicons/icons';
 
@@ -169,41 +169,6 @@ export default defineComponent({
 
     },
     methods: {
-        async openLoader() {
-            const loading = await loadingController.create({
-                message: 'Logging Out...',
-                cssClass: 'custom-loading'
-            });
-            return loading.present();
-        },
-        async openActionSheet() {
-            const openSheet = await actionSheetController.create({
-                header: 'Are you sure you want to log out?',
-                buttons: [
-                    {
-                        text: 'Log Out',
-                        role: 'destructive',
-                        handler: () => {
-                            this.openLoader().then(()=>{
-                                this.logout();
-                            });
-                        },
-                    },
-                    {
-                        text: 'Cancel',
-                        role: 'cancel',
-                        data: {
-                            action: 'cancel',
-                        },
-                    },
-                ],
-            });
-            return openSheet.present();
-        },
-        async presentActionSheetOut() {
-            this.openActionSheet();
-        },
-
         clockedIn(){
             if(this.disabled2) return;
             this.clockIn = new Date().toLocaleTimeString();
@@ -216,12 +181,6 @@ export default defineComponent({
             }).then(res=>{
                 lStore.set('timerecord_timein',res.data.result);
             })
-        },
-
-        logout() {
-            localStorage.clear();
-            this.$router.push('/login');
-            loadingController.dismiss();
         },
         openMenu() {
             menuController.open('app-menu');

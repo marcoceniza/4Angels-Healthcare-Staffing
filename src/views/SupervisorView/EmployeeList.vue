@@ -24,8 +24,6 @@
         </ion-header>
         <ion-content @ionScroll="logScrolling($event)">
 
-            <!-- <ion-text class="ion-margin-bottom"><h2>{{ new Date().getDate() }} <small>{{ getDayToday }}</small> <span>TODAY</span></h2></ion-text> -->
-
             <ion-list class="ion-margin-top listEmployee ion-margin-top">
                 <ion-item v-for="employeeList in employeeList" :key="employeeList.id" v-show="employeeList.role == role || role == ''" button>
                     <ion-avatar slot="start">
@@ -45,7 +43,7 @@
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonHeader, IonToolbar, IonItem, menuController, IonList, IonLabel, actionSheetController, loadingController, IonAvatar, IonButtons, IonImg, IonSelect, IonSelectOption } from '@ionic/vue';
+import { IonContent, IonPage, IonHeader, IonToolbar, IonItem, menuController, IonList, IonLabel, IonAvatar, IonButtons, IonImg, IonSelect, IonSelectOption } from '@ionic/vue';
 import { lStore, axios } from '@/functions';
 
 export default defineComponent({
@@ -66,45 +64,6 @@ export default defineComponent({
         this.user = lStore.get('user_info');
     },
     methods: {
-        async openLoader() {
-            const loading = await loadingController.create({
-                message: 'Logging Out...',
-                cssClass: 'custom-loading'
-            });
-            return loading.present();
-        },
-        async openActionSheet() {
-            const openSheet = await actionSheetController.create({
-                header: 'Are you sure you want to log out?',
-                buttons: [
-                    {
-                        text: 'Log Out',
-                        role: 'destructive',
-                        handler: () => {
-                            this.openLoader().then(()=>{
-                                this.logout();
-                            });
-                        },
-                    },
-                    {
-                        text: 'Cancel',
-                        role: 'cancel',
-                        data: {
-                            action: 'cancel',
-                        },
-                    },
-                ],
-            });
-            return openSheet.present();
-        },
-        async presentActionSheet() {
-            this.openActionSheet();
-        },
-        logout() {
-            localStorage.clear();
-            this.$router.push('/login');
-            loadingController.dismiss();
-        },
         openMenu() {
             menuController.open('app-menu');
         },

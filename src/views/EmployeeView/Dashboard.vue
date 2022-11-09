@@ -73,15 +73,15 @@
                 </ion-item>
                 <ion-item lines="none">
                     <ion-label>
-                        <p>Date: <span>August 30, 2022</span></p>
+                        <p>Date: <span>{{dateFormat('%lm %d, %y',nextSched.shift_date)}}</span></p>
                     </ion-label>
                     <ion-label>
-                        <p>Morning Shift: <span>9am - 11am</span></p>
+                        <p>Time Shift: <span>{{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_start)}} - {{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_end)}}</span></p>
                     </ion-label>
                 </ion-item>
                 <ion-item lines="none">
                     <ion-label>
-                        <p>Location: <span>123 Street Name Suite 101, State Country</span></p>
+                        <p>Location: <span>{{nextSched.location}}</span></p>
                     </ion-label>
                 </ion-item>
                 <ion-item lines="none">
@@ -96,9 +96,9 @@
                     <ion-label>
                         <h1>{{ upSchedule.title }}</h1>
                         <p>{{ upSchedule.name }}</p>
-                        <p>{{ upSchedule.shift_date }}</p>
-                        <p>{{ upSchedule.shift_start }}</p>
-                        <p>{{ upSchedule.shift_end }}</p>
+                        <p>{{ dateFormat('%lm %d, %y',upSchedule.shift_date)}}</p>
+                        <p>{{ dateFormat('%h:%i%a',upSchedule.shift_date+' '+upSchedule.shift_start) }} - {{ dateFormat('%h:%i%a',upSchedule.shift_date+' '+upSchedule.shift_end) }}</p>
+                        <p></p>
                     </ion-label>
                 </ion-item>
             </ion-list>
@@ -144,9 +144,10 @@
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, menuController, actionSheetController, loadingController, IonButtons, IonMenu, IonMenuButton, IonSegment, IonSegmentButton } from '@ionic/vue';
+import { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, menuController, actionSheetController, IonButtons, IonMenu, IonMenuButton, IonSegment, IonSegmentButton } from '@ionic/vue';
 import { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, menu, reader, checkmarkCircle, location, time, calendar, calendarClear, navigate, person } from 'ionicons/icons';
-import { lStore, axios, formatDateString } from '@/functions';
+import { lStore, axios, formatDateString,dateFormat, calcFlyDist, openToast } from '@/functions';
+import { Geolocation } from '@capacitor/geolocation';
 
 export default defineComponent({
     name: 'DashboardView',
@@ -179,7 +180,8 @@ export default defineComponent({
             seconds: '',
             todays: false,
             upcomings: true,
-            upcoming: [{}]
+            upcoming: [{}],
+            nextSched:{}
         }
     },
     created() {
@@ -222,13 +224,18 @@ export default defineComponent({
 
         let currentTimeString = currentDate.toLocaleTimeString('en-US',{hour12:false});
 
-        axios.post(`assigned?user_id=${lStore.get('user_id')}&_batch=true&_joins=mobile_schedule,mobile_branches&_on=mobile_assignedusers.schedule_id=mobile_schedule.id,mobile_schedule.branch_id=mobile_branches.id&_GTE_mobile_schedule:shift_date=${currentDateString}&_GTE_mobile_schedule:shift_start=${currentTimeString}&`).then(res=>{
-            this.upcoming = res.data.result;
-            console.log(res.data.result);
+        axios.post(`assigned?user_id=${lStore.get('user_id')}&_batch=true&_joins=mobile_schedule,mobile_branches&_on=mobile_assignedusers.schedule_id=mobile_schedule.id,mobile_schedule.branch_id=mobile_branches.id&_GTE_mobile_schedule:shift_date=${currentDateString}&_orderby=shift__date_ASC,shift__start`).then(res=>{
+            this.upcoming = res.data.result.filter(el=>{
+                let a = new Date(el.shift_date+' '+el.shift_start).getTime();
+                let b = new Date(currentDateString+' '+currentTimeString).getTime();
+                return a > b;
+            });
+            this.nextSched = res.data.result[0];
         })
 
     },
     methods: {
+        dateFormat,
         scheduleData(e) {
             if(e.detail.value == 'todays-schedule') {
                 this.todays = false;
@@ -240,43 +247,24 @@ export default defineComponent({
                 this.upcomings = false;
             }
         },
-        async openLoader() {
-            const loading = await loadingController.create({
-                message: 'Logging Out...',
-                cssClass: 'custom-loading'
-            });
-            return loading.present();
-        },
-        async openActionSheet() {
-            const openSheet = await actionSheetController.create({
-                header: 'Are you sure you want to log out?',
-                buttons: [
-                    {
-                        text: 'Log Out',
-                        role: 'destructive',
-                        handler: () => {
-                            this.openLoader().then(()=>{
-                                this.logout();
-                            });
-                        },
-                    },
-                    {
-                        text: 'Cancel',
-                        role: 'cancel',
-                        data: {
-                            action: 'cancel',
-                        },
-                    },
-                ],
-            });
-            return openSheet.present();
-        },
-        async presentActionSheetOut() {
-            this.openActionSheet();
-        },
-
-        clockedIn(){
+        async clockedIn(){
             if(this.disabled2) return;
+            const coordinates = await Geolocation.getCurrentPosition();
+
+            let dist = calcFlyDist([
+                coordinates.coords.longitude,
+                coordinates.coords.latitude
+            ],[
+                this.nextSched.location_long,
+                this.nextSched.location_lat
+            ]);
+
+            if(dist > 0.2) {
+                openToast('You must be at least 200 meters closer to the location to time in!','warning');
+
+                return;
+            }
+
             this.clockIn = new Date().toLocaleTimeString();
             this.disabled = false;
             this.disabled2 = true;
@@ -288,12 +276,6 @@ export default defineComponent({
                 lStore.set('timerecord_timein',res.data.result);
             })
         },
-
-        logout() {
-            localStorage.clear();
-            this.$router.push('/login');
-            loadingController.dismiss();
-        },
         openMenu() {
             menuController.open('app-menu');
         },
@@ -301,6 +283,7 @@ export default defineComponent({
             menuController.close('app-menu');
         },
         async presentActionSheet(){
+            const coordinates = await Geolocation.getCurrentPosition();
             const actionSheet = await actionSheetController.create({
                 header: 'Are you sure you want to Clock Out?',
                 buttons: [
@@ -324,6 +307,20 @@ export default defineComponent({
             await actionSheet.present();
             const result = await actionSheet.onDidDismiss();
             if(result.data.action == 'confirm') {
+                let dist = calcFlyDist([
+                    coordinates.coords.longitude,
+                    coordinates.coords.latitude
+                ],[
+                    this.scheduleToday.location_long,
+                    this.scheduleToday.location_lat
+                ]);
+
+                if(dist > 0.2) {
+                    openToast('You must be at least 200 meters closer to the location to time out!','warning');
+                    console.log(dist);
+                    return;
+                }
+
                 this.clockOut = new Date().toLocaleTimeString();
                 this.disabled = true;
                 axios.post('timerecord/update?id='+lStore.get('timerecord_timein').id,null,{

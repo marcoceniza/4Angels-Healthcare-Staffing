@@ -95,7 +95,7 @@
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonHeader, IonToolbar, menuController, IonSearchbar, actionSheetController, loadingController, IonAvatar, IonIcon, IonButtons, IonImg, IonModal, IonTitle } from '@ionic/vue';
+import { IonContent, IonPage, IonHeader, IonToolbar, menuController, IonSearchbar, IonAvatar, IonIcon, IonButtons, IonImg, IonModal, IonTitle } from '@ionic/vue';
 import { axios } from '@/functions';
 import { search, logOut, arrowBack, person, briefcase, time, timer, map } from 'ionicons/icons';
 import { lStore } from '@/functions';
@@ -139,45 +139,6 @@ export default defineComponent({
         this.user = lStore.get('user_info');
     },
     methods: {
-        async openLoader() {
-            const loading = await loadingController.create({
-                message: 'Logging Out...',
-                cssClass: 'custom-loading'
-            });
-            return loading.present();
-        },
-        async openActionSheet() {
-            const openSheet = await actionSheetController.create({
-                header: 'Are you sure you want to log out?',
-                buttons: [
-                    {
-                        text: 'Log Out',
-                        role: 'destructive',
-                        handler: () => {
-                            this.openLoader().then(()=>{
-                                this.logout();
-                            });
-                        },
-                    },
-                    {
-                        text: 'Cancel',
-                        role: 'cancel',
-                        data: {
-                            action: 'cancel',
-                        },
-                    },
-                ],
-            });
-            return openSheet.present();
-        },
-        async presentActionSheet() {
-            this.openActionSheet();
-        },
-        logout() {
-            localStorage.clear();
-            this.$router.push('/login');
-            loadingController.dismiss();
-        },
         openMenu() {
             menuController.open('app-menu');
         },
