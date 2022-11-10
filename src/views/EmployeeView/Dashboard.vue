@@ -73,15 +73,15 @@
                 </ion-item>
                 <ion-item lines="none">
                     <ion-label>
-                        <p>Date: <span>{{dateFormat('%lm %d, %y',nextSched.shift_date)}}</span></p>
+                        <p>Date: <span v-if="nextSched.shift_date == ''">-----</span> <span>{{dateFormat('%lm %d, %y',nextSched.shift_date)}}</span></p>
                     </ion-label>
                     <ion-label>
-                        <p>Time Shift: <span>{{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_start)}} - {{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_end)}}</span></p>
+                        <p>Time Shift: <span v-if="nextSched.shift_start == '' && nextSched.shift_end == ''">-----</span> <span>{{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_start)}} - {{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_end)}}</span></p>
                     </ion-label>
                 </ion-item>
                 <ion-item lines="none">
                     <ion-label>
-                        <p>Location: <span>{{nextSched.location}}</span></p>
+                        <p>Location: <span v-if="nextSched.location == ''">-----</span> <span>{{nextSched.location}}</span></p>
                     </ion-label>
                 </ion-item>
                 <ion-item lines="none">
@@ -268,8 +268,14 @@ export default defineComponent({
             }
         },
         async clockedIn(){
+
+            if(this.nextSched.location == "" && this.nextSched.shift_date == "") {
+                openToast('Schedule today is empty...', 'danger');
+                return;
+            }
+
             if(this.disabled2) return;
-            const coordinates = await Geolocation.getCurrentPosition();
+            const coordinates = await Geolocation.getCurrentPosition({enableHighAccuracy:true});
 
             let dist = calcFlyDist([
                 coordinates.coords.longitude,
@@ -331,8 +337,8 @@ export default defineComponent({
                     coordinates.coords.longitude,
                     coordinates.coords.latitude
                 ],[
-                    this.scheduleToday.location_long,
-                    this.scheduleToday.location_lat
+                    this.nextSched.location_long,
+                    this.nextSched.location_lat
                 ]);
 
                 if(dist > 0.2) {
