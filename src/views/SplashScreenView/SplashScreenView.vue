@@ -51,7 +51,7 @@ export default ({
                     //     case 'Supervisor': this.$router.replace('/supervisor/dashboard'); break;
                     //     case 'Employee': this.$router.replace('/employee/dashboard'); break;
                     // }
-                    this.$router.replace('/employee/dashboard');
+                    router.replace('/employee/dashboard');
                 }, 1500);
             }
         });

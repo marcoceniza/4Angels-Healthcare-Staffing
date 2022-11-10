@@ -50,6 +50,7 @@ import { IonContent, IonPage, IonText, IonItem, IonLabel, IonInput, IonButton, I
 import { axios, validateForm, openToast, lStore } from '@/functions';
 import { eye, eyeOff } from 'ionicons/icons';
 import BackButton from '@/views/BackButton';
+import router from '@/router';
 
 export default defineComponent({
     name: 'LoginPage',
@@ -95,9 +96,10 @@ export default defineComponent({
                     lStore.set('user_id',res.data.result.id);
                     lStore.set('user_token',res.data.token);
                     lStore.set('user_info', res.data.result);
+                    console.log(res.data.result);
                     switch(res.data.result.role) {
-                        case 'Supervisor': this.$router.replace('/supervisor/dashboard'); break;
-                        case 'Employee': this.$router.replace('/employee/dashboard'); break;
+                        case 'Supervisor': router.push('/supervisor/dashboard'); break;
+                        case 'Employee': router.push('/employee/dashboard'); break;
                     }
                     openToast('Login Success', 'primary');
                 }

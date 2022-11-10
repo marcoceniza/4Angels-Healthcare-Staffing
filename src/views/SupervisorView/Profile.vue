@@ -44,6 +44,8 @@ import { defineComponent } from 'vue';
 import { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, actionSheetController, loadingController, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader } from '@ionic/vue';
 import { mail, call, location, create, home, camera } from 'ionicons/icons';
 import { lStore } from '@/functions';
+import router from '@/router';
+
 
 export default defineComponent({
     name: 'SupervisorProfile',
@@ -57,9 +59,29 @@ export default defineComponent({
         }
     },
     created() {
+        this.clear();
         this.user = lStore.get('user_info');
     },
     methods: {
+        clear(){
+            this.message = null;
+            this.clockIn = '';
+            this.clockOut = '';
+            this.disabled = true;
+            this.disabled2 = false;
+            this.facility= '';
+            this.user= {};
+            this.clockTimer= 1;
+            this.startTimer= false;
+            this.timeData= '';
+            this.hours= '';
+            this.minutes= '';
+            this.seconds= '';
+            this.todays= false;
+            this.upcomings= true;
+            this.upcoming= [{}];
+            this.nextSched={};
+        },
         async openLoader() {
             const loading = await loadingController.create({
                 message: 'Logging Out...',
@@ -95,9 +117,11 @@ export default defineComponent({
             this.openActionSheet();
         },
         logout() {
-            localStorage.clear();
-            this.$router.push('/login');
             loadingController.dismiss();
+            window.localStorage.clear();
+            localStorage.clear();
+            router.push('/login');
+            window.location.reload();
         },
     }
 });

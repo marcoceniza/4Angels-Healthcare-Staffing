@@ -27,8 +27,8 @@ const routes = [
     name: 'SplashScreenView',
     component: SplashScreenView,
     beforeEnter: (to, from) => {
-      if (from.path === '/employee' || from.path === '/employee' || from.path === '/employee/dashboard') return false;
-  }
+      if (from.path === '/welcome'||from.path === '/employee' || from.path === '/supervisor' || from.path === '/employee/dashboard'|| from.path === '/supervisor/dashboard'){return false;}
+    }
   },
   {
     path: '/welcome',
@@ -38,13 +38,10 @@ const routes = [
       if (lStore.isset('user_token')) return false;
     }
   },
-    {path: '/login', name: 'LoginPage', component: LoginPage},
+  {path: '/login', name: 'LoginPage', component: LoginPage},
   {
     path: '/supervisor',
     component: SupervisorTabs,
-    beforeEnter: () => {
-      if (!lStore.isset('user_token')) return '/login';
-    },
     children: [
       {
         path: '/supervisor',
@@ -66,14 +63,15 @@ const routes = [
         path: "/supervisor/employeelist",
         component: EmployeeList
       },
-    ]
+    ],
+    beforeEnter: () => {
+      if (!lStore.isset('user_token')) return '/login';
+      if (lStore.get('user_info').role != 'Supervisor') router.back();
+    },
   },
   {
     path: '/employee',
     component: EmployeeTabs,
-    beforeEnter: () => {
-      if (!lStore.isset('user_token')) return '/login';
-    },
     children: [
       {
         path: '/employee/dashboard',
@@ -91,7 +89,11 @@ const routes = [
         path: '/employee/profile',
         component: EmployeeProfile,
       },
-    ]
+    ],
+    beforeEnter: () => {
+      if (!lStore.isset('user_token')) return '/login';
+      if (lStore.get('user_info').role != 'Employee') router.back();
+    },
   }
 ];
 

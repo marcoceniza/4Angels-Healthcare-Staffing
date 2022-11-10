@@ -185,6 +185,7 @@ export default defineComponent({
         }
     },
     created() {
+        this.clear();
         this.user = lStore.get('user_info');
     },
     mounted() {
@@ -236,6 +237,25 @@ export default defineComponent({
     },
     methods: {
         dateFormat,
+        clear(){
+            this.message = null;
+            this.clockIn = '';
+            this.clockOut = '';
+            this.disabled = true;
+            this.disabled2 = false;
+            this.facility= '';
+            this.user= {};
+            this.clockTimer= 1;
+            this.startTimer= false;
+            this.timeData= '';
+            this.hours= '';
+            this.minutes= '';
+            this.seconds= '';
+            this.todays= false;
+            this.upcomings= true;
+            this.upcoming= [{}];
+            this.nextSched={};
+        },
         scheduleData(e) {
             if(e.detail.value == 'todays-schedule') {
                 this.todays = false;
