@@ -39,6 +39,9 @@
             </ion-toolbar>
         </ion-header>
         <ion-content fullscreen="true" id="main-content" scroll-events="true" @ionScroll="logScrolling($event)">
+            <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
+                <ion-refresher-content></ion-refresher-content>
+            </ion-refresher>
 
             <div class="stopwatch ion-margin-top">
                 <p>HOURS <span>{{ hours }}</span></p>
@@ -73,15 +76,15 @@
                 </ion-item>
                 <ion-item lines="none">
                     <ion-label>
-                        <p>Date: <span v-if="nextSched.shift_date == ''">-----</span> <span>{{dateFormat('%lm %d, %y',nextSched.shift_date)}}</span></p>
+                        <p>Date: <span :class="{ hasCon: hasContent }">-------</span> <span class="shift">{{dateFormat('%lm %d, %y',nextSched.shift_date)}}</span></p>
                     </ion-label>
                     <ion-label>
-                        <p>Time Shift: <span v-if="nextSched.shift_start == '' && nextSched.shift_end == ''">-----</span> <span>{{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_start)}} - {{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_end)}}</span></p>
+                        <p>Time Shift: <span :class="{ hasCon: hasContent }">-------</span> <span class="shift">{{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_start)}} <small v-if="this.hasContent == true">-</small> {{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_end)}}</span></p>
                     </ion-label>
                 </ion-item>
                 <ion-item lines="none">
                     <ion-label>
-                        <p>Location: <span v-if="nextSched.location == ''">-----</span> <span>{{nextSched.location}}</span></p>
+                        <p>Location: <span :class="{ hasCon: hasContent }">-------</span> <span class="shift">{{nextSched.location}}</span></p>
                     </ion-label>
                 </ion-item>
                 <ion-item lines="none">
@@ -161,7 +164,15 @@ export default defineComponent({
             }
         }
 
-        return { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, menu, warning, logScrolling, reader, checkmarkCircle, location, time, calendar, calendarClear, navigate, person };
+        const handleRefresh = (event) => {
+            setTimeout(() => {
+                event.target.complete().then(() => {
+                    setTimeout(() => {window.location.reload()}, 500);
+                });
+            }, 2000);
+        };
+
+        return { handleRefresh, apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, menu, warning, logScrolling, reader, checkmarkCircle, location, time, calendar, calendarClear, navigate, person };
     },
     data() {
         return{
@@ -181,7 +192,8 @@ export default defineComponent({
             todays: false,
             upcomings: true,
             upcoming: [{}],
-            nextSched:{}
+            nextSched:{},
+            hasContent: false
         }
     },
     created() {
@@ -189,6 +201,12 @@ export default defineComponent({
         this.user = lStore.get('user_info');
     },
     mounted() {
+        let checkCon = document.querySelector('.shift').textContent;
+
+        if(checkCon) {
+            this.hasContent = true
+        }
+
         const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
         let day = days[new Date().getDay()].toUpperCase();
         this.getDayToday = day;
@@ -363,6 +381,10 @@ export default defineComponent({
 </script>
 
 <style scoped>
+
+.hasCon {
+    display: none;
+}
 
 .disabled2,.disabled{pointer-events: none;}
 .today {display: none;}
