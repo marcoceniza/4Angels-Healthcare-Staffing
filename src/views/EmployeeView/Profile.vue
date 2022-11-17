@@ -1,6 +1,9 @@
 <template>
     <ion-page>
         <ion-toolbar class="title-toolbar ion-padding-top ion-padding-bottom">
+            <ion-buttons @click="setOpen(true)" class="create-icon2">
+                <ion-icon :icon="cloudUpload" slot="start"></ion-icon>
+            </ion-buttons>
             <ion-buttons class="create-icon">
                 <ion-icon :icon="create" slot="end"></ion-icon>
             </ion-buttons>
@@ -35,27 +38,53 @@
                     </ion-col>
                 </ion-row>
             </ion-grid>
+
+            <ion-modal :is-open="isOpen">
+                <ion-header>
+                    <ion-toolbar>
+                        <ion-title color="light">UPLOAD FILE</ion-title>
+                    </ion-toolbar>
+                </ion-header>
+                <ion-content class="ion-padding">
+                    <ion-grid>
+                        <ion-row>
+                            <ion-col>
+                                <ion-icon class="close_icon" color="dark" @click="setOpen(false)" :icon="closeCircle"></ion-icon>
+                                <ion-card button="true">
+                                    <img class="ion-padding" src="@/images/upload.svg"/>
+                                    <ion-card-header>
+                                        <ion-card-subtitle>Attach FILE Here</ion-card-subtitle>
+                                        <ion-card-title>Browse</ion-card-title>
+                                    </ion-card-header>
+                                </ion-card>
+                            </ion-col>
+                        </ion-row>
+                    </ion-grid>
+                </ion-content>
+            </ion-modal>
+
         </ion-content>
     </ion-page>
 </template>
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, actionSheetController, loadingController, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader } from '@ionic/vue';
-import { mail, call, location, create, home, camera } from 'ionicons/icons';
+import { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, actionSheetController, loadingController, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal } from '@ionic/vue';
+import { mail, call, location, create, home, camera, cloudUpload, closeCircle } from 'ionicons/icons';
 import { lStore } from '@/functions';
 import router from '@/router';
 
 
 export default defineComponent({
     name: 'EmployeeProfile',
-    components: { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader },
+    components: { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal },
     setup() {
-        return { mail, call, location, create, home, camera };
+        return { mail, call, location, create, home, camera, cloudUpload, closeCircle };
     },
     data() {
         return {
-            user: {}
+            user: {},
+            isOpen: false
         }
     },
     created() {
@@ -63,6 +92,9 @@ export default defineComponent({
         this.user = lStore.get('user_info');
     },
     methods: {
+        setOpen(isOpen) {
+            this.isOpen = isOpen;
+        },
         clear(){
             this.message = null;
             this.clockIn = '';
@@ -128,6 +160,20 @@ export default defineComponent({
 </script>
 
 <style scoped>
+
+.close_icon {
+    position: absolute;
+    top: 35px;
+    z-index: 1;
+    right: 25px;
+    font-size: 25px;
+}
+
+ion-card {
+    border: 2px dashed #b0b0b0;
+    padding: 20px;
+}
+
 ion-toolbar {
     min-height: 88px;
 }
@@ -176,10 +222,6 @@ ion-content h2 {
     color: #fff;
 }
 
-ion-title {
-    color: #1f94db !important;
-}
-
 ion-list {
     background: none;
     margin-bottom: 30px;
@@ -200,6 +242,15 @@ ion-row {
     position: absolute;
     top: 34px;
     right: 12px;
+    font-size: 25px;
+    color: #fff;
+    display: block;
+}
+
+.create-icon2 {
+    position: absolute;
+    top: 38px;
+    left: 12px;
     font-size: 25px;
     color: #fff;
     display: block;
