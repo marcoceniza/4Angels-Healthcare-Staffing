@@ -285,10 +285,6 @@ ion-avatar {
     height: 40px;
 }
 
-ion-refresher {
-	z-index: 999;
-}
-
 @keyframes spin {
 	0% {
 		transform:rotate(0deg)

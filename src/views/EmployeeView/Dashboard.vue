@@ -39,9 +39,6 @@
             </ion-toolbar>
         </ion-header>
         <ion-content fullscreen="true" id="main-content" scroll-events="true" @ionScroll="logScrolling($event)">
-            <ion-refresher slot="fixed" @ionRefresh="handleRefresh($event)">
-                <ion-refresher-content></ion-refresher-content>
-            </ion-refresher>
 
             <div class="stopwatch ion-margin-top">
                 <p>HOURS <span>{{ hours }}</span></p>
@@ -69,22 +66,22 @@
                 </ion-segment-button>
             </ion-segment>
             
-            <ion-list class="ion-margin-top ion-margin-bottom" :class="{ today: todays }">
+            <ion-list class="ion-margin-top ion-margin-bottom" :class="{ today: todays }" v-if="nextSched.id != null">
                 <ion-item lines="full">
-                    <ion-label color="primary">Schedule Today</ion-label>
+                    <ion-label color="primary">{{nextSched.title}}<small>{{(this.clockIn != null && this.clockIn != '') ? 'Ongoing' : 'Next'}} Schedule</small></ion-label>
                     <ion-icon color="primary" :icon="reader" slot="end"></ion-icon>
                 </ion-item>
                 <ion-item lines="none">
                     <ion-label>
-                        <p>Date: <span :class="{ hasCon: hasContent }">-------</span> <span class="shift">{{dateFormat('%lm %d, %y',nextSched.shift_date)}}</span></p>
+                        <p>Date: <span v-if="nextSched.shift_date == ''">-----</span> <span>{{dateFormat('%sm %d',nextSched.shift_date)}} - {{dateFormat('%sm %d',nextSched.shift_date_end)}}</span></p>
                     </ion-label>
                     <ion-label>
-                        <p>Time Shift: <span :class="{ hasCon: hasContent }">-------</span> <span class="shift">{{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_start)}} <small v-if="this.hasContent == true">-</small> {{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_end)}}</span></p>
+                        <p>Time Shift: <span v-if="nextSched.shift_start == '' && nextSched.shift_end == ''">-----</span> <span>{{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_start)}} - {{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_end)}}</span></p>
                     </ion-label>
                 </ion-item>
                 <ion-item lines="none">
                     <ion-label>
-                        <p>Location: <span :class="{ hasCon: hasContent }">-------</span> <span class="shift">{{nextSched.location}}</span></p>
+                        <p>Location: <span v-if="nextSched.name == ''">-----</span> <span><strong>({{nextSched.name}} Branch)</strong> {{nextSched.location}}</span></p>
                     </ion-label>
                 </ion-item>
                 <ion-item lines="none">
@@ -149,7 +146,7 @@
 import { defineComponent } from 'vue';
 import { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, menuController, actionSheetController, IonButtons, IonMenu, IonMenuButton, IonSegment, IonSegmentButton } from '@ionic/vue';
 import { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, menu, reader, checkmarkCircle, location, time, calendar, calendarClear, navigate, person } from 'ionicons/icons';
-import { lStore, axios, formatDateString,dateFormat, calcFlyDist, openToast } from '@/functions';
+import { lStore, axios, formatDateString,dateFormat, calcFlyDist, openToast, QueryBuilder } from '@/functions';
 import { Geolocation } from '@capacitor/geolocation';
 
 export default defineComponent({
@@ -164,15 +161,7 @@ export default defineComponent({
             }
         }
 
-        const handleRefresh = (event) => {
-            setTimeout(() => {
-                event.target.complete().then(() => {
-                    setTimeout(() => {window.location.reload()}, 500);
-                });
-            }, 2000);
-        };
-
-        return { handleRefresh, apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, menu, warning, logScrolling, reader, checkmarkCircle, location, time, calendar, calendarClear, navigate, person };
+        return { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, menu, warning, logScrolling, reader, checkmarkCircle, location, time, calendar, calendarClear, navigate, person };
     },
     data() {
         return{
@@ -193,7 +182,7 @@ export default defineComponent({
             upcomings: true,
             upcoming: [{}],
             nextSched:{},
-            hasContent: false
+            geotest:{long:0,lat:0}
         }
     },
     created() {
@@ -201,12 +190,6 @@ export default defineComponent({
         this.user = lStore.get('user_info');
     },
     mounted() {
-        let checkCon = document.querySelector('.shift').textContent;
-
-        if(checkCon) {
-            this.hasContent = true
-        }
-
         const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
         let day = days[new Date().getDay()].toUpperCase();
         this.getDayToday = day;
@@ -226,16 +209,7 @@ export default defineComponent({
 
         setInterval(getDataTime, 1000);
 
-        if(lStore.get('timerecord_timein') != null){
-            this.disabled2 = true;
-            if(lStore.get('timerecord_timeout') == null) this.disabled = false;
-            this.clockIn = new Date(lStore.get('timerecord_timein').time_in).toLocaleTimeString();   
-        }
         
-        if(lStore.get('timerecord_timeout') != null){
-            this.disabled = true;
-            this.clockOut = new Date(lStore.get('timerecord_timeout').time_out).toLocaleTimeString();
-        }
 
         let currentDate = new Date();
         let currentDateString = currentDate.toLocaleDateString().split('/');
@@ -244,14 +218,114 @@ export default defineComponent({
         let currentTimeString = currentDate.toLocaleTimeString('en-US',{hour12:false});
 
         axios.post(`assigned?user_id=${lStore.get('user_id')}&_batch=true&_joins=mobile_schedule,mobile_branches&_on=mobile_assignedusers.schedule_id=mobile_schedule.id,mobile_schedule.branch_id=mobile_branches.id&_GTE_mobile_schedule:shift_date=${currentDateString}&_orderby=shift__date_ASC,shift__start`).then(res=>{
-            this.upcoming = res.data.result.filter(el=>{
-                let a = new Date(el.shift_date+' '+el.shift_start).getTime();
-                let b = new Date(currentDateString+' '+currentTimeString).getTime();
-                return a > b;
-            });
-            this.nextSched = res.data.result[0];
-        })
+            this.upcoming = res.data.result;
+        });
 
+
+        let q = new QueryBuilder('assigned');
+        console.log(q.
+        select({
+            mobile_schedule:[
+                'title',
+                'shift_start',
+                'shift_end',
+                'shift_date',
+                'shift_date_end'
+            ],
+            mobile_branches:['name','location']
+        })
+        .join({
+            mobile_schedule: ['mobile_assignedusers.schedule_id','mobile_schedule.id'],
+            mobile_branches: ['mobile_schedule.branch_id','mobile_branches.id']
+        })
+        .where({user_id:lStore.get('user_id')})
+        .order('shift__start','ASC')
+        .compare({
+            'mobile_schedule:shift_date':['<=',currentDateString],
+            'mobile_schedule:shift_date_end':['>=',currentDateString],
+            'mobile_schedule:shift_end':['>=',currentTimeString],
+        }).toString());
+
+        axios.post(`assigned?_select=mobile_schedule.id,
+            mobile_schedule.title,
+            mobile_schedule.shift_start,
+            mobile_schedule.shift_end,
+            mobile_schedule.shift_date,
+            mobile_schedule.shift_date_end,
+            mobile_branches.name,
+            mobile_branches.location&_joins=mobile_schedule,mobile_branches
+            &_on=mobile_assignedusers.schedule_id=mobile_schedule.id,mobile_schedule.branch_id=mobile_branches.id&user_id=${lStore.get('user_id')}
+            &_LSE_mobile_schedule:shift_date=${currentDateString}
+            &_GTE_mobile_schedule:shift_date_end=${currentDateString}&_orderby=mobile__schedule.shift__start_ASC
+            &_GTE_mobile_schedule:shift_end=${currentTimeString}`).then(res=>{
+            if(res.data.result != null) {this.nextSched = res.data.result;}
+
+            localStorage.removeItem('async_timerecord_timein');
+            localStorage.removeItem('async_timerecord_timeout');
+
+            axios.post(`timerecord?user_id=${lStore.get('user_id')}&_orderby=time__in_DESC`).then(res=>{
+                if(res.data.result == null) return;
+                let obj = res.data.result;
+
+                if(obj.schedule_id != this.nextSched.id){
+                    console.log(this.nextSched.id);
+                    if(obj.time_out == null){
+                        lStore.set('timerecord_timein',{
+                            id:obj.id,
+                            time_in:obj.time_in,
+                            schedule_id:obj.schedule_id
+                        })
+                        
+                        axios.post(`assigned?_select=mobile_schedule.id,
+                        mobile_schedule.title,
+                        mobile_schedule.shift_start,
+                        mobile_schedule.shift_end,
+                        mobile_schedule.shift_date,
+                        mobile_schedule.shift_date_end,
+                        mobile_branches.name,
+                        mobile_branches.location&_joins=mobile_schedule,mobile_branches
+                        &_on=mobile_assignedusers.schedule_id=mobile_schedule.id,mobile_schedule.branch_id=mobile_branches.id&schedule_id=${obj.schedule_id}&user_id=${lStore.get('user_id')}`).then(res=>{
+                            if(res.data.result != null) {this.nextSched = res.data.result;}
+                        });
+                    }
+
+                    
+                }else{
+
+                    if(obj.time_out == null) {
+                        lStore.set('timerecord_timein',{
+                            id:obj.id,
+                            time_in:obj.time_in,
+                            schedule_id:obj.schedule_id
+                        })
+
+                    
+                        lStore.set('timerecord_timeout',{
+                            id:obj.id,
+                            time_out:obj.time_out,
+                            schedule_id:obj.schedule_id
+                        })
+                    }else{
+                        this.nextSched = {};
+                    }
+                }
+
+                if(lStore.get('timerecord_timein') != null){
+                    this.disabled2 = true;
+                    if(lStore.get('timerecord_timeout') == null) this.disabled = false;
+                    this.clockIn = new Date(lStore.get('timerecord_timein').time_in).toLocaleTimeString();   
+                }
+                console.log(this.clockOut);
+                
+                if(lStore.get('timerecord_timeout') != null){
+                    if(lStore.get('timerecord_timeout').time_out == null) return;
+                    this.disabled = true;
+                    this.clockOut = new Date(lStore.get('timerecord_timeout').time_out).toLocaleTimeString();
+                }
+            });
+        });
+        
+        
     },
     methods: {
         dateFormat,
@@ -287,7 +361,7 @@ export default defineComponent({
         },
         async clockedIn(){
 
-            if(this.nextSched.location == "" && this.nextSched.shift_date == "") {
+            if(this.nextSched.id == null) {
                 openToast('Schedule today is empty...', 'danger');
                 return;
             }
@@ -302,6 +376,7 @@ export default defineComponent({
                 this.nextSched.location_long,
                 this.nextSched.location_lat
             ]);
+            
 
             if(dist > 0.2) {
                 openToast('You must be at least 200 meters closer to the location to time in!','warning');
@@ -313,15 +388,23 @@ export default defineComponent({
             this.disabled = false;
             this.disabled2 = true;
             axios.post('timerecord/create',null,{
+                schedule_id: this.nextSched.id,
                 user_id: lStore.get('user_id'),
-                location_lat:0,
-                location_long:0,
+                location: await this.mapFind(coordinates.coords.longitude,coordinates.coords.latitude),
+                location_lat:coordinates.coords.latitude,
+                location_long:coordinates.coords.longitude,
             }).then(res=>{
+                console.log(res.data);
                 lStore.set('timerecord_timein',res.data.result);
             })
         },
         openMenu() {
             menuController.open('app-menu');
+        },
+        async mapFind(long,lat){
+            let accessToken = "pk.eyJ1Ijoic3BlZWR5cmVwYWlyIiwiYSI6ImNsNWg4cGlzaDA3NTYzZHFxdm1iMTJ2cWQifQ.j_XBhRHLg-CcGzah7uepMA";
+            let returnVal = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${long},${lat}.json?access_token=${accessToken}`)
+            return returnVal.data.features[0].place_name;
         },
         closeMenu() {
             menuController.close('app-menu');
@@ -369,10 +452,15 @@ export default defineComponent({
                 this.disabled = true;
                 axios.post('timerecord/update?id='+lStore.get('timerecord_timein').id,null,{
                     time_out:"",
-                    location_out_lat:0,
-                    location_out_long:0,
-                }).then(res=>{
-                    lStore.set('timerecord_timeout',res.data.result);
+                    location_out: await this.mapFind(coordinates.coords.longitude,coordinates.coords.latitude),
+                    location_out_lat:coordinates.coords.latitude,
+                    location_out_long:coordinates.coords.longitude,
+                }).then(()=>{
+                    localStorage.removeItem('timerecord_timein');
+                    localStorage.removeItem('timerecord_timeout');
+
+                    window.location.reload();
+
                 })
             }
         }
@@ -381,10 +469,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-
-.hasCon {
-    display: none;
-}
 
 .disabled2,.disabled{pointer-events: none;}
 .today {display: none;}
@@ -692,5 +776,10 @@ ion-menu ion-item {
 .segment-class {
     margin-top: 25px;
 }
+
+
+ion-label small{display: inline-block;margin-left:10px;padding-left: 10px;position: relative;}
+ion-label small::before{position: absolute;content: "";background: #1f94db;display: block;left: 0px;width: 1px;height: 12px;top: 1px;}
+
 
 </style>

@@ -27,8 +27,6 @@ export class AsyncStorage{
                 schema = schema[elem];
             }
             
-            
-        
             schema[pList[len-1]] = val;
             console.log(schema[pList[len-1]]);
             // localStorage.setItem('async_'+pList[0], JSON.stringify(this.storage[pList[0]]));
@@ -86,7 +84,7 @@ class AxiosR{
     get(endpoint){
         return axiosA({
             method:'get',
-            url: this.baseUrl+endpoint
+            url: endpoint
         });
     }
 
@@ -321,6 +319,7 @@ export function dateFormat(stringFormat,dateString){
     let dateFormat = stringFormat.replaceAll('%y',date.getFullYear());
     dateFormat = dateFormat.replaceAll('%d',date.getDate());
     dateFormat = dateFormat.replaceAll('%lm',months[date.getMonth()]);
+    dateFormat = dateFormat.replaceAll('%sm',months[date.getMonth()].match(/(^[A-Za-z]{0,3})/g)[0]);
     dateFormat = dateFormat.replaceAll('%m',date.getMonth()+1);
     dateFormat = (date.getMinutes() >= 10) ?  dateFormat.replaceAll('%i',date.getMinutes()) : dateFormat.replaceAll('%i',"0"+date.getMinutes());
     dateFormat = (date.getSeconds() >= 10) ?  dateFormat.replaceAll('%s',date.getSeconds()) : dateFormat.replaceAll('%s',"0"+date.getSeconds());
@@ -395,3 +394,100 @@ function toRad(Value){
     return Value * Math.PI / 180;
 }
 // END OF COMP FUNCTIONS FOR calcFlyDist
+
+export class QueryBuilder{
+	constructor(endpoint){
+    this.endpoint = endpoint;
+    this.query = endpoint+'?';
+  }
+  
+  select(val){
+	this.query+='_select=';
+    if(Array.isArray(val)) {
+        for(let x = 0;x<val.length;x++){
+        if(x == val.length - 1) this.query+=val[x];
+        else this.query+=`${val[x]},`;
+      }
+    }else{
+        for(let v in val){
+        for(let x = 0;x<val[v].length;x++){
+          if(x == val.length - 1) this.query+=val[x];
+          else this.query+=`${v}.${val[v][x]},`;
+        }
+      }
+    }
+    this.query+='&';
+    return this;
+  }
+  
+  where(matchObj){
+    let max = Object.keys(matchObj).length;
+    let count = 0;
+    for(let s in matchObj){
+			this.query+=`${s}=${matchObj[s]}`
+      if(count <= max-1) this.query+='&';
+    }
+    
+    return this;
+  }
+  
+  order(col,dir){
+    this.query+=`_orderby=${col}_${dir}&`;
+    return this;
+  }
+  
+  limit(n){
+    this.query+=`_limit=${n}&`;
+    return this;
+  }
+  
+  startAt(n){
+    this.query+=`_offset=${n}&`;
+    return this;
+  }
+  
+  batch(){
+    this.query+='_batch=true&';
+    return this;
+  }
+  
+  toString(reset=false){
+    let q = this.query.substring(0,this.query.length);
+    if(this.query.charAt(this.query.length-1) == '&') q = q.substring(0,q.length-1);
+    if(reset) this.query = this.endpoint+'?';
+    return q;
+  }
+  
+  join(joinInfo){
+    let joinString = '_joins=';
+    let onString = '_on=';
+    for(let j in joinInfo){
+      joinString+=`${j},`;
+      onString+=`${joinInfo[j][0]}=${joinInfo[j][1]},`;
+    }
+    
+    joinString = joinString.substring(0,joinString.length-1);
+    onString = onString.substring(0,onString.length-1);
+    
+    this.query += `${joinString}&${onString}&`;
+    return this;
+  }
+  
+  compare(matchObj){
+    let max = Object.keys(matchObj).length;
+    let operators = {
+        '!=' : '_NEQ_',
+      '<' : '_LSS_',
+      '>' : '_GTR_',
+      '<=' : '_LSE_',
+      '>=' : '_GTE_'
+    };
+    
+    let count = 0;
+    for(let s in matchObj){
+			this.query+=`${operators[matchObj[s][0]]}${s}=${matchObj[s][1]}`
+      if(count <= max-1) this.query+='&';
+    }
+    return this;
+  }
+}

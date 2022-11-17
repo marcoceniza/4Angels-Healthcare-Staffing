@@ -12,8 +12,8 @@
                 </div>
                 <div class="form-input">
                     <ion-item>
-                        <ion-label position="stacked">Email Address</ion-label>
-                        <ion-input type="email" v-model="loginInput" placeholder="Enter email address here"></ion-input>
+                        <ion-label position="stacked">Username</ion-label>
+                        <ion-input type="email" v-model="loginInput" placeholder="Enter username here"></ion-input>
                     </ion-item>
                     <ion-item>
                         <ion-label position="stacked">Password</ion-label>
@@ -96,12 +96,11 @@ export default defineComponent({
                     lStore.set('user_id',res.data.result.id);
                     lStore.set('user_token',res.data.token);
                     lStore.set('user_info', res.data.result);
-                    console.log(res.data.result);
-                    switch(res.data.result.role) {
-                        case 'Supervisor': router.push('/supervisor/dashboard'); break;
-                        case 'Employee': router.push('/employee/dashboard'); break;
+                    if(res.data.result.role != 'Employee'){
+                        openToast('For Employee login only!', 'danger');
                     }
                     openToast('Login Success', 'primary');
+                    router.replace('/employee/dashboard');
                 }
             });
         },

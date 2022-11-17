@@ -126,13 +126,13 @@ export default defineComponent({
         let day = days[new Date().getDay()].toUpperCase();
         this.getDayToday = day;
 
-        let currentDate = new Date();
-        let tommDate = new Date();
-        tommDate.setDate(tommDate.getDate()+1);
+        // let currentDate = new Date();
+        // let tommDate = new Date();
+        // tommDate.setDate(tommDate.getDate()+1);
 
-        axios.post(`timerecord?user_id=${lStore.get('user_id')}&_joins=mobile_branches&_on=mobile_timerecord.branch_id=mobile_branches.id&_batch=true&_GTE_time_in=${currentDate.toLocaleDateString()}&_LSE_time_out=${tommDate.toLocaleDateString()}`).then(res=>{
-            this.timesheets = res.data.result;
-        })
+        // axios.post(`timerecord?user_id=${lStore.get('user_id')}&_joins=mobile_branches&_on=mobile_timerecord.branch_id=mobile_branches.id&_batch=true&_GTE_time_in=${currentDate.toLocaleDateString()}&_LSE_time_out=${tommDate.toLocaleDateString()}`).then(res=>{
+        //     this.timesheets = res.data.result;
+        // })
 
     },
     methods: {

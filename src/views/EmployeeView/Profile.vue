@@ -49,20 +49,14 @@
                     <ion-grid>
                         <ion-row>
                             <ion-col>
+                                <ion-icon class="close_icon" color="dark" @click="setOpen(false)" :icon="closeCircle"></ion-icon>
                                 <ion-card button="true">
                                     <img class="ion-padding" src="@/images/upload.svg"/>
                                     <ion-card-header>
+                                        <ion-card-subtitle>Attach FILE Here</ion-card-subtitle>
                                         <ion-card-title>Browse</ion-card-title>
                                     </ion-card-header>
                                 </ion-card>
-                            </ion-col>
-                        </ion-row>
-                    </ion-grid>
-
-                    <ion-grid>
-                        <ion-row>
-                            <ion-col>
-                                <ion-icon color="dark" size="large" @click="setOpen(false)" :icon="closeCircle"></ion-icon>
                             </ion-col>
                         </ion-row>
                     </ion-grid>
@@ -167,13 +161,17 @@ export default defineComponent({
 
 <style scoped>
 
+.close_icon {
+    position: absolute;
+    top: 35px;
+    z-index: 1;
+    right: 25px;
+    font-size: 25px;
+}
+
 ion-card {
     border: 2px dashed #b0b0b0;
     padding: 20px;
-}
-
-.close ion-button {
-    --color: #fff;
 }
 
 ion-toolbar {
