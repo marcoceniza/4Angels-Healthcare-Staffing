@@ -46,20 +46,58 @@
                     </ion-toolbar>
                 </ion-header>
                 <ion-content class="ion-padding">
-                    <ion-grid>
+                    <!-- <ion-grid>
                         <ion-row>
                             <ion-col>
+                                <label for="uploadFile">
                                 <ion-icon class="close_icon" color="dark" @click="setOpen(false)" :icon="closeCircle"></ion-icon>
                                 <ion-card button="true">
                                     <img class="ion-padding" src="@/images/upload.svg"/>
-                                    <ion-card-header>
+                                    <ion-card-header>   
                                         <ion-card-subtitle>Attach FILE Here</ion-card-subtitle>
                                         <ion-card-title>Browse</ion-card-title>
                                     </ion-card-header>
                                 </ion-card>
+                                </label>
+                                <input id="uploadFile" type="file" hidden>
                             </ion-col>
                         </ion-row>
-                    </ion-grid>
+                    </ion-grid> -->
+                    <div class="file_vwr_ctrl">
+                        <button class="bulkSelect"  :class="{active:bulkSelect}" @click="bulkSelect = !bulkSelect;chosenFile=[]">Bulk Select: {{bulkSelect ? 'On': 'Off'}}</button>
+                        <button class="delete" @click="deleteSelected" v-if="chosenFile.length>0">Delete</button> 
+                        <a :href="this.cifile+this.user.id+'/'+chosenFile[0]" download="true" v-if="!bulkSelect && chosenFile.length == 1">Download</a>
+                    </div>
+                    <div class="file_vwr">
+                        <div class="file_itm" v-for="f in files" :key="f" @click="addToChosen(f)">
+                            <div class="file_disp">
+                                <img class="selectInd" src="../../images/check-icon.svg" :class="{selected:chosenFile.includes(f)}">
+                                <img :src="path+'/'+f" v-if="fileType(f) == 'image'">
+                                <img class="fileicon" src="../../images/file-icon.svg" v-if="fileType(f) == 'document'">
+                            </div>
+                            <p>{{f}}</p>
+                        </div>
+                        <div class="file_itm uploading" v-for="f,i in uploading" :key="i">
+                            <label for="uploadFile">
+                            <div class="file_disp" >
+                                <img class="fileicon" src="../../images/file-icon.svg">
+                            </div>
+                            </label>
+                            <input type="file" id="uploadFile" hidden @change="uploadFile">
+                            <p>[Uploading] {{i}}</p>
+                        </div>
+
+                        <div class="file_itm upload">
+                            <label for="uploadFile">
+                            <div class="file_disp">
+                                <img class="fileicon" src="../../images/upload-icon.svg" :class="{selected:chosenFile.includes(f)}">
+                            </div>
+                            </label>
+                            <input type="file" id="uploadFile" hidden @change="uploadFile">
+                            <p>Add File</p>
+                        </div>
+                    </div>
+                    <button class="file_vwr_close" @click="setOpen(false)">Close</button>
                 </ion-content>
             </ion-modal>
 
@@ -71,7 +109,7 @@
 import { defineComponent } from 'vue';
 import { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, actionSheetController, loadingController, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal } from '@ionic/vue';
 import { mail, call, location, create, home, camera, cloudUpload, closeCircle } from 'ionicons/icons';
-import { lStore } from '@/functions';
+import { lStore, axios} from '@/functions';
 import router from '@/router';
 
 
@@ -84,16 +122,43 @@ export default defineComponent({
     data() {
         return {
             user: {},
-            isOpen: false
+            isOpen: false,
+            cifile: 'https://www.4angelshc.com/mobile/filesystem/',
+            path:'',
+            relativePath:'',
+            files:[],
+            chosenFile:[],
+            bulkSelect:false,
+            uploading:{}
         }
     },
     created() {
         this.clear();
         this.user = lStore.get('user_info');
+
+        this.path = this.cifile+this.user.id;
+        this.relativePath = this.user.id;
+        axios.post('files?path='+this.relativePath).then(res=>{
+            this.files = res.data;
+        });
+        
     },
     methods: {
+
         setOpen(isOpen) {
             this.isOpen = isOpen;
+        },
+        fileType(filename){
+            if(typeof filename != 'string') return; 
+            let fileSplit = filename.toLowerCase().split('.');
+            let ext = fileSplit[fileSplit.length - 1];
+            let image = ['gif','png','jpg','jpeg'];
+            let video = ['mp4','webm','ogv'];
+            let doc = ['doc','docx','xls','xlsx','csv','pdf'];
+            if(image.includes(ext)) return 'image'; 
+            if(video.includes(ext)) return 'video';
+            if(doc.includes(ext)) return 'document';
+            return '';
         },
         clear(){
             this.message = null;
@@ -155,6 +220,44 @@ export default defineComponent({
             router.push('/login');
             window.location.reload();
         },
+        addToChosen(f){
+            if(this.bulkSelect) {
+                if(!this.chosenFile.includes(f)) this.chosenFile.push(f);
+                else this.chosenFile.splice(this.chosenFile.indexOf(f),1);
+            }
+            else {
+                if(this.chosenFile[0] != f) this.chosenFile[0] = f;
+                else this.chosenFile.splice(0,1);
+            }
+        },
+        uploadFile(e){
+            let file = e.target.files[0];
+            this.uploading[file.name] = 0;
+            axios.post('files/upload?path='+this.relativePath+'&type='+this.fileType(file.name),null,{file},{
+                onUploadProgress:progressEvent =>{
+                    let uploadProgress = (progressEvent.loaded / file.size) * 100;
+                    this.uploading[file.name] = uploadProgress.toFixed(2);
+                }
+            }).then(res=>{
+                if(res.data.success === false) alert(res.data.msg)
+                delete this.uploading[file.name];
+                this.files.push(res.data.file_name);
+            });
+        },
+        deleteSelected(){
+            if(this.chosenFile.length == 0) {alert('No file selected');return;}
+            let toDelete = [];
+            this.chosenFile.forEach(el=>{
+                axios.post('files/delete?path='+this.relativePath+'/'+el);
+                toDelete.push(el);
+            });
+
+            for(let i = 0; i < toDelete.length; i++){
+                this.files.splice(this.files.indexOf(toDelete[i]),1);
+            }
+            
+            this.chosenFile = [];
+        }
     }
 });
 </script>
@@ -271,6 +374,42 @@ ion-toolbar {
 
 .title-toolbar {
     background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(58,174,245,1) 30%, rgba(20,139,210,1) 65%); 
+}
+
+.file_vwr_ctrl{padding: 10px;}
+.file_vwr_ctrl button,.file_vwr_ctrl a{padding: 5px;margin: 3px;border-radius: 5px;transition:0.2s;display: inline-block;}
+.file_vwr_ctrl .bulkSelect{color: #2095db;background: #fff;border: 1px solid #2095db;}
+.file_vwr_ctrl .bulkSelect.active, .file_vwr_ctrl .bulkSelect:active{background: #2095db;color:#fff;font-size: 14px;}
+.file_vwr_ctrl .delete{background: #85382a;color:#fff}
+.file_vwr_ctrl .delete:active{background: #492019;color:#fff}
+.file_vwr_ctrl a{text-decoration: none;color: #fff;background: #3c8839;font-weight: 400;font-size: 13px;}
+.file_vwr_ctrl a:active{background: #244223;}
+
+.file_vwr{display: flex;justify-content: flex-start;gap:5px;flex-wrap: wrap;}
+.file_itm{width: 24%;background: #fff;padding: 5px;border:1px solid #ddd;border-radius: 5px;overflow: hidden;transition: 0.2s;}
+.file_itm:active{transform: scale(0.9);}
+.file_disp{border-radius: 5px;overflow: hidden;aspect-ratio: 1/1;position: relative;border:1px solid #ddd;}
+.file_disp img:not(.fileicon):not(.selectInd){object-fit: cover;width: 100%;height: 100%;}
+.file_disp .selectInd{opacity: 0;transition:0.2s;position: absolute;z-index: 2;background: rgba(0, 0, 0, 0.5);padding: 28%;transform: none;left: 0;}
+.file_disp .selectInd.selected{opacity: 1;}
+.file_disp .fileicon{width: 30px;height: 30px;position: absolute;left: 50%;top: 50%;transform: translateX(-50%) translateY(-50%);}
+.file_itm p{margin: 10px 0;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;}
+.file_itm.upload .file_disp{border:none}
+.file_itm.upload{border: 2px dashed #2095db;}
+.uploading .file_disp .fileicon{animation-name:uploading;animation-duration: 2s;animation-iteration-count: infinite;}
+.file_vwr_close{margin-top: 20px;padding: 10px;width: 100px;background: #bb4a36;border-radius: 5px;}
+.file_vwr_close:active{background: #7c3225;}
+
+
+@media only screen and (max-width:500px){
+    .file_itm{width: 31%;}
+}
+
+@keyframes uploading{
+    0%{transform: translateX(-50%) translateY(-50%);}
+    49%{transform: translateX(-50%) translateY(-500%);}
+    50%{transform: translateX(-50%) translateY(450%);}
+    0%{transform: translateX(-50%) translateY(-50%);}
 }
 
 </style>

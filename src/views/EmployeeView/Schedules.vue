@@ -19,7 +19,6 @@
                 <ion-item button lines="none" @click="openActionSheet(st.id)">
                     <ion-label>
                         <h1>{{st.title}}</h1>
-                        <p>{{st.name}}</p>
                         <p>Start Time: {{dateFormat('%h:%i%a',selectedDate+' '+st.shift_start)}}</p>
                         <p>End Time: {{dateFormat('%h:%i%a',selectedDate+' '+st.shift_end)}}</p>
                         <p>Date: {{dateFormat('%lm %d, %y',selectedDate)}}</p>
@@ -74,7 +73,35 @@ export default defineComponent({
         const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
         let month = months[new Date().getMonth()].toUpperCase();
         this.getMonthToday = month;
-        this.selectedDate = new Date().toLocaleDateString();
+
+        let date = new Date().toLocaleDateString();
+        date = date.split('/')[2]+'-'+date.split('/')[0]+'-'+date.split('/')[1];
+        this.selectedDate = date;
+        axios.post(`schedule?_LSE_shift_date=${date}&_GTE_shift_date_end=${date}&_batch=true&_joins=mobile_branches&_on=mobile_schedule.branch_id=mobile_branches.id
+        &_select=mobile_schedule.id,
+        mobile_schedule.title,
+        mobile_schedule.shift_start,
+        mobile_schedule.shift_end,
+        mobile_schedule.shift_date,
+        mobile_schedule.shift_date_end,
+        mobile_branches.name`).then(res=>{
+            if(res.data.result == null) {
+                this.schedulesToday = [];
+                return;
+            }
+            this.schedulesToday = res.data.result;
+            
+            this.takenSchedulesToday = [];
+            this.schedulesToday.forEach(el=>{
+                axios.post('assigned?user_id='+lStore.get('user_id')+'&schedule_id='+el.id,null,null).then(res=>{
+                    if(res.data.result == null) return;
+                    this.takenSchedulesToday.push(el.id);
+                })
+            })
+
+            this.takenSchedulesToday = this.schedulesToday.filter(el=>this.takenSchedulesToday.includes(el.id));
+            console.log(this.takenSchedulesToday);
+        })
     },
     methods: {
         dateFormat,
