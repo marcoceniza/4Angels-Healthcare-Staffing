@@ -33,14 +33,19 @@
                     </ion-avatar>
                 </ion-buttons>
             </ion-toolbar>
-            <ion-toolbar>
-                <ion-text class="ion-padding-start ion-margin-top" color="primary">{{ user.firstname }} {{ user.lastname }}</ion-text>
-                <p class="ion-padding-start">{{ getMonthToday }} {{ new Date().getDate() }}, {{ new Date().getFullYear() }}</p>
-            </ion-toolbar>
         </ion-header>
         <ion-content fullscreen="true" id="main-content" scroll-events="true" @ionScroll="logScrolling($event)">
 
-            <div class="stopwatch ion-margin-top">
+            <ion-refresher style="position:relative; z-index:999;" slot="fixed" @ionRefresh="handleRefresh($event)">
+                <ion-refresher-content refreshing-spinner="crescent"></ion-refresher-content>
+            </ion-refresher>
+
+            <div class="hdr_txt">
+                <ion-text class="ion-padding-start ion-margin-top" color="primary">{{ user.firstname }} {{ user.lastname }}</ion-text>
+                <p class="ion-padding-start">{{ getMonthToday }} {{ new Date().getDate() }}, {{ new Date().getFullYear() }}</p>
+            </div>
+
+            <div id="stopwatch" class="stopwatch ion-margin-top">
                 <p>HOURS <span>{{ hours }}</span></p>
                 <p>MINUTES <span>{{ minutes }}</span></p>
                 <p>SECONDS <span>{{ seconds }}</span></p>
@@ -96,7 +101,7 @@
                     <ion-label>
                         <h1>{{ upSchedule.title }}</h1>
                         <p>{{ upSchedule.name }}</p>
-                        <p>{{ dateFormat('%lm %d, %y',upSchedule.shift_date)}}</p>
+                        <p>{{ dateFormat('%sm %d',upSchedule.shift_date)}} - {{ dateFormat('%sm %d',upSchedule.shift_date_end)}}</p>
                         <p>{{ dateFormat('%h:%i%a',upSchedule.shift_date+' '+upSchedule.shift_start) }} - {{ dateFormat('%h:%i%a',upSchedule.shift_date+' '+upSchedule.shift_end) }}</p>
                         <p></p>
                     </ion-label>
@@ -144,14 +149,14 @@
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, menuController, actionSheetController, IonButtons, IonMenu, IonMenuButton, IonSegment, IonSegmentButton } from '@ionic/vue';
+import { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, menuController, actionSheetController, IonButtons, IonMenu, IonMenuButton, IonSegment, IonSegmentButton, IonRefresher, IonRefresherContent } from '@ionic/vue';
 import { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, menu, reader, checkmarkCircle, location, time, calendar, calendarClear, navigate, person } from 'ionicons/icons';
-import { lStore, axios, formatDateString,dateFormat, calcFlyDist, openToast, QueryBuilder } from '@/functions';
+import { lStore, axios, formatDateString,dateFormat, openToast } from '@/functions';
 import { Geolocation } from '@capacitor/geolocation';
 
 export default defineComponent({
     name: 'DashboardView',
-    components: { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonButtons, IonMenu, IonMenuButton, IonSegment, IonSegmentButton },
+    components: { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonButtons, IonMenu, IonMenuButton, IonSegment, IonSegmentButton, IonRefresher, IonRefresherContent },
     setup() {
         const logScrolling = (e) => {
             if (e.detail.scrollTop >= 20) {
@@ -161,7 +166,14 @@ export default defineComponent({
             }
         }
 
-        return { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, menu, warning, logScrolling, reader, checkmarkCircle, location, time, calendar, calendarClear, navigate, person };
+        const handleRefresh = (event) => {
+            setTimeout(() => {
+                window.history.go;
+                event.target.complete();
+            }, 2000);
+        };
+
+        return { handleRefresh, apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, menu, warning, logScrolling, reader, checkmarkCircle, location, time, calendar, calendarClear, navigate, person };
     },
     data() {
         return{
@@ -182,7 +194,8 @@ export default defineComponent({
             upcomings: true,
             upcoming: [{}],
             nextSched:{},
-            geotest:{long:0,lat:0}
+            geotest:{long:0,lat:0},
+            timesheets:[]
         }
     },
     created() {
@@ -208,124 +221,16 @@ export default defineComponent({
         }
 
         setInterval(getDataTime, 1000);
-
         
-
-        let currentDate = new Date();
-        let currentDateString = currentDate.toLocaleDateString().split('/');
-        currentDateString = formatDateString(currentDateString[2] + '-' + currentDateString[0] + '-' + currentDateString[1]).replaceAll(' ','');
-
-        let currentTimeString = currentDate.toLocaleTimeString('en-US',{hour12:false});
-
-        axios.post(`assigned?user_id=${lStore.get('user_id')}&_batch=true&_joins=mobile_schedule,mobile_branches&_on=mobile_assignedusers.schedule_id=mobile_schedule.id,mobile_schedule.branch_id=mobile_branches.id&_GTE_mobile_schedule:shift_date=${currentDateString}&_orderby=shift__date_ASC,shift__start`).then(res=>{
-            this.upcoming = res.data.result;
-        });
-
-
-        let q = new QueryBuilder('assigned');
-        console.log(q.
-        select({
-            mobile_schedule:[
-                'title',
-                'shift_start',
-                'shift_end',
-                'shift_date',
-                'shift_date_end'
-            ],
-            mobile_branches:['name','location']
-        })
-        .join({
-            mobile_schedule: ['mobile_assignedusers.schedule_id','mobile_schedule.id'],
-            mobile_branches: ['mobile_schedule.branch_id','mobile_branches.id']
-        })
-        .where({user_id:lStore.get('user_id')})
-        .order('shift__start','ASC')
-        .compare({
-            'mobile_schedule:shift_date':['<=',currentDateString],
-            'mobile_schedule:shift_date_end':['>=',currentDateString],
-            'mobile_schedule:shift_end':['>=',currentTimeString],
-        }).toString());
-
-        axios.post(`assigned?_select=mobile_schedule.id,
-            mobile_schedule.title,
-            mobile_schedule.shift_start,
-            mobile_schedule.shift_end,
-            mobile_schedule.shift_date,
-            mobile_schedule.shift_date_end,
-            mobile_branches.name,
-            mobile_branches.location&_joins=mobile_schedule,mobile_branches
-            &_on=mobile_assignedusers.schedule_id=mobile_schedule.id,mobile_schedule.branch_id=mobile_branches.id&user_id=${lStore.get('user_id')}
-            &_LSE_mobile_schedule:shift_date=${currentDateString}
-            &_GTE_mobile_schedule:shift_date_end=${currentDateString}&_orderby=mobile__schedule.shift__start_ASC
-            &_GTE_mobile_schedule:shift_end=${currentTimeString}`).then(res=>{
-            if(res.data.result != null) {this.nextSched = res.data.result;}
-
-            localStorage.removeItem('async_timerecord_timein');
-            localStorage.removeItem('async_timerecord_timeout');
-
-            axios.post(`timerecord?user_id=${lStore.get('user_id')}&_orderby=time__in_DESC`).then(res=>{
-                if(res.data.result == null) return;
-                let obj = res.data.result;
-
-                if(obj.schedule_id != this.nextSched.id){
-                    console.log(this.nextSched.id);
-                    if(obj.time_out == null){
-                        lStore.set('timerecord_timein',{
-                            id:obj.id,
-                            time_in:obj.time_in,
-                            schedule_id:obj.schedule_id
-                        })
-                        
-                        axios.post(`assigned?_select=mobile_schedule.id,
-                        mobile_schedule.title,
-                        mobile_schedule.shift_start,
-                        mobile_schedule.shift_end,
-                        mobile_schedule.shift_date,
-                        mobile_schedule.shift_date_end,
-                        mobile_branches.name,
-                        mobile_branches.location&_joins=mobile_schedule,mobile_branches
-                        &_on=mobile_assignedusers.schedule_id=mobile_schedule.id,mobile_schedule.branch_id=mobile_branches.id&schedule_id=${obj.schedule_id}&user_id=${lStore.get('user_id')}`).then(res=>{
-                            if(res.data.result != null) {this.nextSched = res.data.result;}
-                        });
-                    }
-
-                    
-                }else{
-
-                    if(obj.time_out == null) {
-                        lStore.set('timerecord_timein',{
-                            id:obj.id,
-                            time_in:obj.time_in,
-                            schedule_id:obj.schedule_id
-                        })
-
-                    
-                        lStore.set('timerecord_timeout',{
-                            id:obj.id,
-                            time_out:obj.time_out,
-                            schedule_id:obj.schedule_id
-                        })
-                    }else{
-                        this.nextSched = {};
-                    }
-                }
-
-                if(lStore.get('timerecord_timein') != null){
-                    this.disabled2 = true;
-                    if(lStore.get('timerecord_timeout') == null) this.disabled = false;
-                    this.clockIn = new Date(lStore.get('timerecord_timein').time_in).toLocaleTimeString();   
-                }
-                console.log(this.clockOut);
-                
-                if(lStore.get('timerecord_timeout') != null){
-                    if(lStore.get('timerecord_timeout').time_out == null) return;
-                    this.disabled = true;
-                    this.clockOut = new Date(lStore.get('timerecord_timeout').time_out).toLocaleTimeString();
-                }
-            });
-        });
+        this.fetchScheds();
         
-        
+    },
+    watch:{
+        $route(to){
+            if(to.path == '/employee/dashboard'){
+                this.fetchScheds();
+            }
+        }
     },
     methods: {
         dateFormat,
@@ -369,20 +274,20 @@ export default defineComponent({
             if(this.disabled2) return;
             const coordinates = await Geolocation.getCurrentPosition({enableHighAccuracy:true});
 
-            let dist = calcFlyDist([
-                coordinates.coords.longitude,
-                coordinates.coords.latitude
-            ],[
-                this.nextSched.location_long,
-                this.nextSched.location_lat
-            ]);
-            
+            // let dist = calcFlyDist([
+            //     coordinates.coords.longitude,
+            //     coordinates.coords.latitude
+            // ],[
+            //     this.nextSched.location_long,
+            //     this.nextSched.location_lat
+            // ]);
 
-            if(dist > 0.2) {
-                openToast('You must be at least 200 meters closer to the location to time in!','warning');
-
-                return;
-            }
+            // if(dist > 0.2) {
+            //         openToast('You must be at least 200 meters closer to the location to time out!','warning');
+            //         console.log(dist);
+            //         return;
+            //     }
+        
 
             this.clockIn = new Date().toLocaleTimeString();
             this.disabled = false;
@@ -434,19 +339,19 @@ export default defineComponent({
             await actionSheet.present();
             const result = await actionSheet.onDidDismiss();
             if(result.data.action == 'confirm') {
-                let dist = calcFlyDist([
-                    coordinates.coords.longitude,
-                    coordinates.coords.latitude
-                ],[
-                    this.nextSched.location_long,
-                    this.nextSched.location_lat
-                ]);
+                // let dist = calcFlyDist([
+                //     coordinates.coords.longitude,
+                //     coordinates.coords.latitude
+                // ],[
+                //     this.nextSched.location_long,
+                //     this.nextSched.location_lat
+                // ]);
 
-                if(dist > 0.2) {
-                    openToast('You must be at least 200 meters closer to the location to time out!','warning');
-                    console.log(dist);
-                    return;
-                }
+                // if(dist > 0.2) {
+                //     openToast('You must be at least 200 meters closer to the location to time out!','warning');
+                //     console.log(dist);
+                //     return;
+                // }
 
                 this.clockOut = new Date().toLocaleTimeString();
                 this.disabled = true;
@@ -463,6 +368,140 @@ export default defineComponent({
 
                 })
             }
+        },
+        fetchScheds(){
+            let currentDate = new Date();
+            let currentDateString = currentDate.toLocaleDateString().split('/');
+            currentDateString = formatDateString(currentDateString[2] + '-' + currentDateString[0] + '-' + currentDateString[1]).replaceAll(' ','');
+
+            let tommDate = new Date();
+            tommDate.setDate(tommDate.getDate()+1);
+            tommDate = tommDate.toLocaleDateString();
+            let tommDateArr = tommDate.split('/');
+            tommDate = formatDateString(tommDateArr[2]+'-'+tommDateArr[0]+'-'+tommDateArr[1]).replaceAll(' ','');
+
+            let checkResponse = 0;
+
+            axios.post(`assigned?user_id=${lStore.get('user_id')}
+            &_batch=true
+            &_joins=mobile_schedule,mobile_branches
+            &_on=mobile_assignedusers.schedule_id=mobile_schedule.id,mobile_schedule.branch_id=mobile_branches.id
+            &_LSE_mobile_schedule:shift_date=${currentDateString}
+            &_GTE_mobile_schedule:shift_date_end=${currentDateString}
+            &_orderby=shift__date_ASC,shift__start`).then(res=>{
+                this.upcoming = res.data.result;
+                checkResponse++;
+            });
+
+            axios.post(`timerecord?
+            user_id=${lStore.get('user_id')}
+            &_batch=true
+            &_joins=mobile_schedule
+            &_on=mobile_timerecord.schedule_id=mobile_schedule.id
+            &_GTE_time_in=${currentDateString}
+            &_LSE_time_out=${tommDate}`).then(res=>{
+                this.timesheets = res.data.result;
+                checkResponse++;
+            });
+
+            let resultChecker = setInterval(()=>{
+                if(checkResponse == 2){
+                    let timesheetsSchedIds = [];
+                    let schedIndex = -1;
+
+                    if(this.timesheets != null){
+                        this.timesheets.forEach(el => timesheetsSchedIds.push(el.id));
+                        for(let i = 0; i < this.upcoming.length; i++){
+                            if(!timesheetsSchedIds.includes(this.upcoming[i].schedule_id) && schedIndex == -1){
+                                this.nextSched = this.upcoming[i];
+                                this.nextSched.id = this.upcoming[i].schedule_id;
+                            }
+                        }
+
+                        let newUpcoming = [];
+
+                        for(let i = 0; i < this.upcoming.length; i++){
+                            if(!timesheetsSchedIds.includes(this.upcoming[i].schedule_id)){
+                                newUpcoming.push(this.upcoming[i]);
+                            }
+                        }
+                        this.upcoming = newUpcoming;
+                    }else{
+                        this.nextSched = this.upcoming[0];
+                        this.nextSched.id = this.upcoming[0].schedule_id;
+                    }
+                    
+                    
+
+                    
+                    clearInterval(resultChecker);
+
+                }
+            },100);
+
+                localStorage.removeItem('async_timerecord_timein');
+                localStorage.removeItem('async_timerecord_timeout');
+
+                axios.post(`timerecord?user_id=${lStore.get('user_id')}&_orderby=time__in_DESC`).then(res=>{
+                    if(res.data.result == null) return;
+                    let obj = res.data.result;
+
+                    if(obj.schedule_id != this.nextSched.id){
+                        console.log(this.nextSched.id);
+                        if(obj.time_out == null){
+                            lStore.set('timerecord_timein',{
+                                id:obj.id,
+                                time_in:obj.time_in,
+                                schedule_id:obj.schedule_id
+                            })
+                            
+                            axios.post(`assigned?_select=mobile_schedule.id,
+                            mobile_schedule.title,
+                            mobile_schedule.shift_start,
+                            mobile_schedule.shift_end,
+                            mobile_schedule.shift_date,
+                            mobile_schedule.shift_date_end,
+                            mobile_branches.name,
+                            mobile_branches.location&_joins=mobile_schedule,mobile_branches
+                            &_on=mobile_assignedusers.schedule_id=mobile_schedule.id,mobile_schedule.branch_id=mobile_branches.id&schedule_id=${obj.schedule_id}&user_id=${lStore.get('user_id')}`).then(res=>{
+                                if(res.data.result != null) {this.nextSched = res.data.result;}
+                            });
+                        }
+
+                        
+                    }else{
+
+                        if(obj.time_out == null) {
+                            lStore.set('timerecord_timein',{
+                                id:obj.id,
+                                time_in:obj.time_in,
+                                schedule_id:obj.schedule_id
+                            })
+
+                        
+                            lStore.set('timerecord_timeout',{
+                                id:obj.id,
+                                time_out:obj.time_out,
+                                schedule_id:obj.schedule_id
+                            })
+                        }else{
+                            this.nextSched = {};
+                        }
+                    }
+
+                    if(lStore.get('timerecord_timein') != null){
+                        this.disabled2 = true;
+                        if(lStore.get('timerecord_timeout') == null) this.disabled = false;
+                        this.clockIn = new Date(lStore.get('timerecord_timein').time_in).toLocaleTimeString();   
+                    }
+                    console.log(this.clockOut);
+                    
+                    if(lStore.get('timerecord_timeout') != null){
+                        if(lStore.get('timerecord_timeout').time_out == null) return;
+                        this.disabled = true;
+                        this.clockOut = new Date(lStore.get('timerecord_timeout').time_out).toLocaleTimeString();
+                    }
+                });
         }
     }
 });
@@ -708,6 +747,23 @@ ion-toolbar p {
 
 ion-title {
     color: #fff;
+}
+
+.hdr_txt {
+    margin-bottom: 35px;
+    margin-top: 6px;
+}
+
+.hdr_txt p {
+    margin: 10px 0 0;
+    font-size: 12px;
+    color: #888;
+    padding: 0;
+}
+
+.hdr_txt ion-text {
+    margin: 0;
+    padding: 0;
 }
 
 .stopwatch {

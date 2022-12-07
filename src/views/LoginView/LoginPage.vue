@@ -39,22 +39,57 @@
                         <ion-spinner name="dots"></ion-spinner>
                     </span>
                 </ion-button>
+
+                <ion-text class="privacy">By logging in, I agree to 4Angels Healthcare Staffing's <a @click="setOpen(true)" href="javascript:;">Terms of Service</a> and <a @click="setOpen2(true)" href="javascript:;">Privacy Policy</a></ion-text>
             </div>
+
+            <ion-modal :is-open="isOpen">
+                <ion-header>
+                    <ion-toolbar>
+                        <ion-title>Terms of Service</ion-title>
+                        <ion-buttons @click="setOpen(false)" slot="end">
+                            <ion-icon :icon="close"></ion-icon>
+                        </ion-buttons>
+                    </ion-toolbar>
+                </ion-header>
+                <ion-content class="ion-padding">
+                    <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Magni illum quidem recusandae ducimus quos reprehenderit. Veniam, molestias quos, dolorum consequuntur nisi deserunt omnis id illo sit cum qui. Eaque,
+                    dicta.</p>
+                </ion-content>
+            </ion-modal>
+
+            <ion-modal :is-open="isOpen2">
+                <ion-header>
+                    <ion-toolbar>
+                        <ion-title>Privacy Policy</ion-title>
+                        <ion-buttons @click="setOpen2(false)" slot="end">
+                            <ion-icon :icon="close"></ion-icon>
+                        </ion-buttons>
+                    </ion-toolbar>
+                </ion-header>
+                <ion-content class="ion-padding">
+                    <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Magni illum quidem recusandae ducimus quos reprehenderit. Veniam, molestias quos, dolorum consequuntur nisi deserunt omnis id illo sit cum qui. Eaque,
+                    dicta.</p>
+                </ion-content>
+            </ion-modal>
+
         </ion-content>
     </ion-page>
 </template>
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonText, IonItem, IonLabel, IonInput, IonButton, IonCheckbox, IonSpinner } from '@ionic/vue';
+import { IonContent, IonPage, IonText, IonItem, IonLabel, IonInput, IonButton, IonCheckbox, IonSpinner, IonModal } from '@ionic/vue';
 import { axios, validateForm, openToast, lStore } from '@/functions';
-import { eye, eyeOff } from 'ionicons/icons';
+import { eye, eyeOff, close } from 'ionicons/icons';
 import BackButton from '@/views/BackButton';
-import router from '@/router';
 
 export default defineComponent({
     name: 'LoginPage',
-    components: { IonContent, IonPage, IonText, IonItem, IonLabel, IonInput, IonButton, IonCheckbox, IonSpinner, BackButton },
+    components: { IonContent, IonPage, IonText, IonItem, IonLabel, IonInput, IonButton, IonCheckbox, IonSpinner, BackButton, IonModal },
+    setup() {
+        return { close };
+    },
     data() {
         return{
             loginInput: "",
@@ -63,10 +98,18 @@ export default defineComponent({
             showIcon: true,
             showIcon2: false,
             eye,
-            eyeOff
+            eyeOff,
+            isOpen: false,
+            isOpen2: false,
         };
     },
     methods: {
+        setOpen(isOpen) {
+            this.isOpen = isOpen;
+        },
+        setOpen2(isOpen2) {
+            this.isOpen2 = isOpen2;
+        },
         login() {
             let rules = {password:{isRequired:true}};
             let input = {password:this.password};
@@ -98,9 +141,10 @@ export default defineComponent({
                     lStore.set('user_info', res.data.result);
                     if(res.data.result.role != 'Employee'){
                         openToast('For Employee login only!', 'danger');
+                        return;
                     }
                     openToast('Login Success', 'primary');
-                    router.replace('/employee/dashboard');
+                    this.$router.replace('/employee/dashboard');
                 }
             });
         },
@@ -126,6 +170,19 @@ ion-header {
     box-shadow: none;
 }
 
+ion-modal ion-icon {
+    font-size: 20px;
+}
+
+ion-title {
+    font-size: 19px;
+}
+
+.privacy{
+    text-align: center;
+    margin-top: 60px;
+    font-size: 14px;
+}
 .form-container {
     display: flex;
     flex-flow: column wrap;

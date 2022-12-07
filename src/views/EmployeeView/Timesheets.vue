@@ -9,18 +9,25 @@
                 </ion-buttons>
                 <ion-title>Timesheets</ion-title>
             </ion-toolbar>
-            <ion-toolbar class="sub-header sub-header3 ion-padding-bottom">
-                <ion-datetime @ionChange="setDate" presentation="date"></ion-datetime>
-            </ion-toolbar>
         </ion-header>
         <ion-content fullscreen="true">
+
+            <ion-refresher style="position:relative; z-index:999;" slot="fixed" @ionRefresh="handleRefresh($event)">
+                <ion-refresher-content refreshing-spinner="crescent"></ion-refresher-content>
+            </ion-refresher>
+
+            <div class="sub-header sub-header3 ion-padding-bottom">
+                <ion-datetime color="primary" @ionChange="setDate" presentation="date"></ion-datetime>
+            </div>
 
             <ion-list class="ion-margin-top">
                 <ion-item v-for="test in timesheets" :key="test.user_id">
                     <ion-label>
-                        <h1>{{ test.name }}</h1>
+                        <h1>{{ test.title }}</h1>
                         <p>Clock In: {{ dateFormat('%h:%i%a',test.time_in) }}</p>
                         <p>Clock Out: {{ dateFormat('%h:%i%a',test.time_out) }}</p>
+                        <p>Total Hours Rendered: {{test.totalHours}}</p>
+                        <p>Total Pay: ${{test.totalPay}}</p>
                     </ion-label>
                 </ion-item>
             </ion-list>
@@ -88,13 +95,13 @@
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonHeader, IonToolbar, menuController, IonDatetime, IonModal, IonTitle } from '@ionic/vue';
+import { IonContent, IonPage, IonHeader, IonToolbar, menuController, IonDatetime, IonModal, IonTitle, IonRefresher, IonRefresherContent } from '@ionic/vue';
 import { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, menu, close, arrowBack, person, briefcase, time, timer } from 'ionicons/icons';
 import { lStore, axios, dateFormat, formatDateString } from '@/functions';
 
 export default defineComponent({
     name: 'TmesheetsView',
-    components: { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, IonModal, IonTitle },
+    components: { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, IonModal, IonTitle, IonRefresher, IonRefresherContent },
     setup() {
         const logScrolling3 = (e) => {
             if (e.detail.scrollTop >= 50) {
@@ -105,7 +112,15 @@ export default defineComponent({
                 document.querySelector('.sub-header3').classList.remove('hidden');
             }
         }
-        return { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, logScrolling3, menu, close, arrowBack, person, briefcase, time, timer };
+
+        const handleRefresh = (event) => {
+            setTimeout(() => {
+                window.history.go;
+                event.target.complete();
+            }, 2000);
+        };
+
+        return { handleRefresh, apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, logScrolling3, menu, close, arrowBack, person, briefcase, time, timer };
     },
     data() {
         return{
@@ -114,7 +129,7 @@ export default defineComponent({
             isOpen: false,
             getDayToday: '',
             user: {},
-            timesheets: [{}],
+            timesheets: [],
             selectedDate : ''
         }
     },
@@ -126,13 +141,36 @@ export default defineComponent({
         let day = days[new Date().getDay()].toUpperCase();
         this.getDayToday = day;
 
-        // let currentDate = new Date();
-        // let tommDate = new Date();
-        // tommDate.setDate(tommDate.getDate()+1);
+        let currentDate = new Date();
+        let tommDate = new Date();
+        tommDate.setDate(tommDate.getDate()+1);
+        tommDate = tommDate.toLocaleDateString();
+        currentDate = currentDate.toLocaleDateString();
+        let currentDateArr = currentDate.split('/');
+        let tommDateArr = tommDate.split('/');
+        currentDate = formatDateString(currentDateArr[2]+'-'+currentDateArr[0]+'-'+currentDateArr[1]).replaceAll(' ','');
+        tommDate = formatDateString(tommDateArr[2]+'-'+tommDateArr[0]+'-'+tommDateArr[1]).replaceAll(' ','');
 
-        // axios.post(`timerecord?user_id=${lStore.get('user_id')}&_joins=mobile_branches&_on=mobile_timerecord.branch_id=mobile_branches.id&_batch=true&_GTE_time_in=${currentDate.toLocaleDateString()}&_LSE_time_out=${tommDate.toLocaleDateString()}`).then(res=>{
-        //     this.timesheets = res.data.result;
-        // })
+        axios.post(
+            `timerecord?
+            user_id=${lStore.get('user_id')}
+            &_batch=true
+            &_joins=mobile_schedule
+            &_on=mobile_timerecord.schedule_id=mobile_schedule.id
+            &_GTE_time_in=${currentDate}
+            &_LSE_time_out=${tommDate}` 
+        ).then(res=>{
+            this.timesheets = [];
+            if(res.data.result == null) return;
+            this.timesheets = res.data.result;
+            for(let i = 0; i < this.timesheets.length; i++){
+                let totalHours = (new Date(this.timesheets[i].time_out).getTime() -  new Date(this.timesheets[i].time_in).getTime()) / (1000*60*60);
+                this.timesheets[i].totalHours = totalHours.toFixed(2);
+                this.timesheets[i].totalPay = totalHours * lStore.get('user_info').hourly_rate;
+                this.timesheets[i].totalPay = this.timesheets[i].totalPay.toFixed(2);
+            }
+            
+        })
 
     },
     methods: {
@@ -159,8 +197,24 @@ export default defineComponent({
             currentDate = formatDateString(currentDateArr[2]+'-'+currentDateArr[0]+'-'+currentDateArr[1]).replaceAll(' ','');
             tommDate = formatDateString(tommDateArr[2]+'-'+tommDateArr[0]+'-'+tommDateArr[1]).replaceAll(' ','');
             
-            axios.post(`timerecord?user_id=${lStore.get('user_id')}&_joins=mobile_branches&_on=mobile_timerecord.branch_id=mobile_branches.id&_batch=true&_GTE_time_in=${currentDate}&_LSE_time_out=${tommDate}`).then(res=>{
+            axios.post(
+                `timerecord?
+                user_id=${lStore.get('user_id')}
+                &_joins=mobile_schedule
+                &_on=mobile_timerecord.schedule_id=mobile_schedule.id
+                &_GTE_time_in=${currentDate}
+                &_LSE_time_out=${tommDate}
+                &_batch=true`
+            ).then(res=>{
+                this.timesheets = [];
+                if(res.data.result == null) return;
                 this.timesheets = res.data.result;
+                for(let i = 0; i < this.timesheets.length; i++){
+                    let totalHours = (new Date(this.timesheets[i].time_out).getTime() -  new Date(this.timesheets[i].time_in).getTime()) / (1000*60*60);
+                    this.timesheets[i].totalHours = totalHours.toFixed(2);
+                    this.timesheets[i].totalPay = totalHours * lStore.get('user_info').hourly_rate;
+                    this.timesheets[i].totalPay = this.timesheets[i].totalPay.toFixed(2);
+                }
             })
         }
     }

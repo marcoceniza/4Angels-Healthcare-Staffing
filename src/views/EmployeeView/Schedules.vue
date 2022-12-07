@@ -9,17 +9,21 @@
                 </ion-buttons>
                 <ion-title>Schedules</ion-title>
             </ion-toolbar>
-            <ion-toolbar class="sub-header sub-header2 ion-padding-bottom">
-                <ion-datetime @ionChange="setDate" presentation="date"></ion-datetime>
-            </ion-toolbar>
         </ion-header>
         <ion-content fullscreen="true">
+
+            <ion-refresher style="position:relative; z-index:999;" slot="fixed" @ionRefresh="handleRefresh($event)">
+                <ion-refresher-content refreshing-spinner="crescent"></ion-refresher-content>
+            </ion-refresher>
+
+            <div class="sub-header sub-header2 ion-padding-bottom">
+                <ion-datetime @ionChange="setDate" presentation="date"></ion-datetime>
+            </div>
 
             <ion-list class="ion-margin-top" v-for="st in schedulesToday" :key="st.id" :class="{schedTaken: takenSchedulesToday.includes(st.id)}">
                 <ion-item button lines="none" @click="openActionSheet(st.id)">
                     <ion-label>
                         <h1>{{st.title}}</h1>
-                        <p>{{st.name}}</p>
                         <p>Start Time: {{dateFormat('%h:%i%a',selectedDate+' '+st.shift_start)}}</p>
                         <p>End Time: {{dateFormat('%h:%i%a',selectedDate+' '+st.shift_end)}}</p>
                         <p>Date: {{dateFormat('%lm %d, %y',selectedDate)}}</p>
@@ -27,19 +31,23 @@
                 </ion-item>
             </ion-list>
 
+            <ion-text v-if="(takenSchedulesToday.length == 0)" class="ion-margin-top">
+                <p>no data...</p>
+            </ion-text>
+
         </ion-content>
     </ion-page>
 </template>
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, actionSheetController, IonTitle, IonButtons } from '@ionic/vue';
+import { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, actionSheetController, IonTitle, IonButtons, IonRefresher, IonRefresherContent } from '@ionic/vue';
 import { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, menu } from 'ionicons/icons';
 import { axios, lStore,dateFormat } from '@/functions';
 
 export default defineComponent({
     name: 'SchedulesView',
-    components: { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, IonTitle, IonButtons },
+    components: { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, IonTitle, IonButtons, IonRefresher, IonRefresherContent },
     setup() {
         const logScrolling2 = (e) => {
             if (e.detail.scrollTop >= 50) {
@@ -50,7 +58,15 @@ export default defineComponent({
                 document.querySelector('.sub-header2').classList.remove('hidden');
             }
         }
-        return { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, logScrolling2, menu };
+
+        const handleRefresh = (event) => {
+            setTimeout(() => {
+                window.history.go;
+                event.target.complete();
+            }, 2000);
+        };
+
+        return { handleRefresh, apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, logScrolling2, menu };
     },
     data() {
         return{
@@ -74,7 +90,35 @@ export default defineComponent({
         const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
         let month = months[new Date().getMonth()].toUpperCase();
         this.getMonthToday = month;
-        this.selectedDate = new Date().toLocaleDateString();
+
+        let date = new Date().toLocaleDateString();
+        date = date.split('/')[2]+'-'+date.split('/')[0]+'-'+date.split('/')[1];
+        this.selectedDate = date;
+        axios.post(`schedule?_LSE_shift_date=${date}&_GTE_shift_date_end=${date}&_batch=true&_joins=mobile_branches&_on=mobile_schedule.branch_id=mobile_branches.id
+        &_select=mobile_schedule.id,
+        mobile_schedule.title,
+        mobile_schedule.shift_start,
+        mobile_schedule.shift_end,
+        mobile_schedule.shift_date,
+        mobile_schedule.shift_date_end,
+        mobile_branches.name`).then(res=>{
+            if(res.data.result == null) {
+                this.schedulesToday = [];
+                return;
+            }
+            this.schedulesToday = res.data.result;
+            
+            this.takenSchedulesToday = [];
+            this.schedulesToday.forEach(el=>{
+                axios.post('assigned?user_id='+lStore.get('user_id')+'&schedule_id='+el.id,null,null).then(res=>{
+                    if(res.data.result == null) return;
+                    this.takenSchedulesToday.push(el.id);
+                })
+            })
+
+            this.takenSchedulesToday = this.schedulesToday.filter(el=>this.takenSchedulesToday.includes(el.id));
+            console.log(this.takenSchedulesToday);
+        })
     },
     methods: {
         dateFormat,

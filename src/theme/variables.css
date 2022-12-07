@@ -110,7 +110,9 @@ ion-header::after {
 	display: none;
 }
 
-
+ion-datetime {
+	--background: #bee4fb;
+}
 
 .mapboxgl-ctrl-geocoder--input {
 	font-size: 14px;

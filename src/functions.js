@@ -395,99 +395,138 @@ function toRad(Value){
 }
 // END OF COMP FUNCTIONS FOR calcFlyDist
 
+// upload image mobile
+
+export class ImageDataConverter {
+    constructor(dataURI) {
+        this.dataURI = dataURI;
+    }
+  
+    getByteString() {
+      let byteString;
+      if (this.dataURI.split(',')[0].indexOf('base64') >= 0) {
+        byteString = atob(this.dataURI.split(',')[1]);
+      } else {
+        byteString = decodeURI(this.dataURI.split(',')[1]);
+      }
+      return byteString;
+    }
+  
+    getMimeString() {
+      return this.dataURI.split(',')[0].split(':')[1].split(';')[0];
+    }
+  
+    convertToTypedArray() {
+      let byteString = this.getByteString();
+      let ia = new Uint8Array(byteString.length);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      return ia;
+    }
+  
+    dataURItoBlob() {
+      let mimeString = this.getMimeString();
+      let intArray = this.convertToTypedArray();
+      return new Blob([intArray], {type: mimeString});
+    }
+}
+
+// end upload image mobile
+
 export class QueryBuilder{
-	constructor(endpoint){
-    this.endpoint = endpoint;
-    this.query = endpoint+'?';
-  }
-  
-  select(val){
-	this.query+='_select=';
-    if(Array.isArray(val)) {
-        for(let x = 0;x<val.length;x++){
-        if(x == val.length - 1) this.query+=val[x];
-        else this.query+=`${val[x]},`;
-      }
-    }else{
-        for(let v in val){
-        for(let x = 0;x<val[v].length;x++){
-          if(x == val.length - 1) this.query+=val[x];
-          else this.query+=`${v}.${val[v][x]},`;
+    constructor(endpoint){
+        this.endpoint = endpoint;
+        this.query = endpoint+'?';
+    }
+
+        select(val){
+            this.query+='_select=';
+        if(Array.isArray(val)) {
+            for(let x = 0;x<val.length;x++){
+            if(x == val.length - 1) this.query+=val[x];
+            else this.query+=`${val[x]},`;
+            }
+        }else{
+            for(let v in val){
+            for(let x = 0;x<val[v].length;x++){
+                if(x == val.length - 1) this.query+=val[x];
+                else this.query+=`${v}.${val[v][x]},`;
+            }
+            }
         }
-      }
-    }
-    this.query+='&';
-    return this;
-  }
-  
-  where(matchObj){
-    let max = Object.keys(matchObj).length;
-    let count = 0;
-    for(let s in matchObj){
-			this.query+=`${s}=${matchObj[s]}`
-      if(count <= max-1) this.query+='&';
-    }
-    
-    return this;
-  }
-  
-  order(col,dir){
-    this.query+=`_orderby=${col}_${dir}&`;
-    return this;
-  }
-  
-  limit(n){
-    this.query+=`_limit=${n}&`;
-    return this;
-  }
-  
-  startAt(n){
-    this.query+=`_offset=${n}&`;
-    return this;
-  }
-  
-  batch(){
-    this.query+='_batch=true&';
-    return this;
-  }
-  
-  toString(reset=false){
-    let q = this.query.substring(0,this.query.length);
-    if(this.query.charAt(this.query.length-1) == '&') q = q.substring(0,q.length-1);
-    if(reset) this.query = this.endpoint+'?';
-    return q;
-  }
-  
-  join(joinInfo){
-    let joinString = '_joins=';
-    let onString = '_on=';
-    for(let j in joinInfo){
-      joinString+=`${j},`;
-      onString+=`${joinInfo[j][0]}=${joinInfo[j][1]},`;
-    }
-    
-    joinString = joinString.substring(0,joinString.length-1);
-    onString = onString.substring(0,onString.length-1);
-    
-    this.query += `${joinString}&${onString}&`;
-    return this;
-  }
-  
-  compare(matchObj){
-    let max = Object.keys(matchObj).length;
-    let operators = {
-        '!=' : '_NEQ_',
-      '<' : '_LSS_',
-      '>' : '_GTR_',
-      '<=' : '_LSE_',
-      '>=' : '_GTE_'
-    };
-    
-    let count = 0;
-    for(let s in matchObj){
-			this.query+=`${operators[matchObj[s][0]]}${s}=${matchObj[s][1]}`
-      if(count <= max-1) this.query+='&';
-    }
-    return this;
-  }
+        this.query+='&';
+        return this;
+        }
+
+        where(matchObj){
+        let max = Object.keys(matchObj).length;
+        let count = 0;
+        for(let s in matchObj){
+                this.query+=`${s}=${matchObj[s]}`
+            if(count <= max-1) this.query+='&';
+        }
+
+        return this;
+        }
+
+        order(col,dir){
+        this.query+=`_orderby=${col}_${dir}&`;
+        return this;
+        }
+
+        limit(n){
+        this.query+=`_limit=${n}&`;
+        return this;
+        }
+
+        startAt(n){
+        this.query+=`_offset=${n}&`;
+        return this;
+        }
+
+        batch(){
+        this.query+='_batch=true&';
+        return this;
+        }
+
+        toString(reset=false){
+        let q = this.query.substring(0,this.query.length);
+        if(this.query.charAt(this.query.length-1) == '&') q = q.substring(0,q.length-1);
+        if(reset) this.query = this.endpoint+'?';
+        return q;
+        }
+
+        join(joinInfo){
+        let joinString = '_joins=';
+        let onString = '_on=';
+        for(let j in joinInfo){
+            joinString+=`${j},`;
+            onString+=`${joinInfo[j][0]}=${joinInfo[j][1]},`;
+        }
+
+        joinString = joinString.substring(0,joinString.length-1);
+        onString = onString.substring(0,onString.length-1);
+
+        this.query += `${joinString}&${onString}&`;
+        return this;
+        }
+
+        compare(matchObj){
+        let max = Object.keys(matchObj).length;
+        let operators = {
+            '!=' : '_NEQ_',
+            '<' : '_LSS_',
+            '>' : '_GTR_',
+            '<=' : '_LSE_',
+            '>=' : '_GTE_'
+        };
+
+        let count = 0;
+        for(let s in matchObj){
+                this.query+=`${operators[matchObj[s][0]]}${s}=${matchObj[s][1]}`
+            if(count <= max-1) this.query+='&';
+        }
+        return this;
+        }
 }
