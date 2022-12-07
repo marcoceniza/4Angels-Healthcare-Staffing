@@ -1,5 +1,24 @@
 <template>
     <ion-page>
+        <div class="Timesheets_modal" :class="{openModal:openModal}">
+                <div class="Timesheets_modal_box">
+                    <h2>{{quedTimesheet.title}}</h2>
+                    <div class="grid">
+                        <p>Schedule Start:</p><div><span>{{dateFormat('%h:%i%a','2022-01-01 '+quedTimesheet.shift_start)}}</span></div>
+                        <p>Schedule End:</p><div><span>{{dateFormat('%h:%i%a','2022-01-01 '+quedTimesheet.shift_end)}}</span></div>
+                        <p>Clock in:</p><div><span>{{dateFormat('%h:%i%a',quedTimesheet.time_in)}}</span></div>
+                        <p>Clock out:</p><div><span>{{dateFormat('%h:%i%a',quedTimesheet.time_out)}}</span></div>
+                        <p>Reg. Hours Rendered:</p><div><span>{{quedTimesheet.total_reg_rendered}} hr(s)</span></div>
+                        <p>Reg. Hours Pay:</p><div><span>${{quedTimesheet.total_reg_rendered_earned}}</span></div>
+                        <p>Late / Undertime:</p><div><span>{{quedTimesheet.reg_late_offset}} min(s)</span></div>
+                        <p>Overtime:</p><div><span>{{quedTimesheet.est_overtime}} hr(s)</span></div>
+                        <p>Overtime Pay:</p><div><span>${{quedTimesheet.est_overtime_earned}}</span></div>
+                        <p>Total Pay:</p><div><span>${{quedTimesheet.total_earned}}</span></div>
+                    </div>
+                    <ion-button expand="block" @click="openModal=false">Close</ion-button>
+            </div>
+        </div>
+
         <ion-header class="header" no-border collapse="fade">
             <ion-toolbar class="main-header">
                 <ion-buttons slot="end">
@@ -11,7 +30,6 @@
             </ion-toolbar>
         </ion-header>
         <ion-content fullscreen="true">
-
             <ion-refresher style="position:relative; z-index:999;" slot="fixed" @ionRefresh="handleRefresh($event)">
                 <ion-refresher-content refreshing-spinner="crescent"></ion-refresher-content>
             </ion-refresher>
@@ -21,13 +39,12 @@
             </div>
 
             <ion-list class="ion-margin-top">
-                <ion-item v-for="test in timesheets" :key="test.user_id">
+                <ion-item v-for="test in timesheets" :key="test.user_id" @click="quedTimesheet = test;openModal=true">
                     <ion-label>
-                        <h1>{{ test.title }}</h1>
+                        <h2>{{ test.title }}</h2>
                         <p>Clock In: {{ dateFormat('%h:%i%a',test.time_in) }}</p>
                         <p>Clock Out: {{ dateFormat('%h:%i%a',test.time_out) }}</p>
-                        <p>Total Hours Rendered: {{test.totalHours}}</p>
-                        <p>Total Pay: ${{test.totalPay}}</p>
+                        <p>Total Pay: ${{test.total_earned}}</p>
                     </ion-label>
                 </ion-item>
             </ion-list>
@@ -115,7 +132,7 @@ export default defineComponent({
 
         const handleRefresh = (event) => {
             setTimeout(() => {
-                window.history.go;
+                window.location.reload();
                 event.target.complete();
             }, 2000);
         };
@@ -130,7 +147,9 @@ export default defineComponent({
             getDayToday: '',
             user: {},
             timesheets: [],
-            selectedDate : ''
+            selectedDate : '',
+            openModal: false,
+            quedTimesheet:{}
         }
     },
     created() {
@@ -158,7 +177,7 @@ export default defineComponent({
             &_joins=mobile_schedule
             &_on=mobile_timerecord.schedule_id=mobile_schedule.id
             &_GTE_time_in=${currentDate}
-            &_LSE_time_out=${tommDate}` 
+            &_GTE_time_in=${tommDate}` 
         ).then(res=>{
             this.timesheets = [];
             if(res.data.result == null) return;
@@ -166,12 +185,9 @@ export default defineComponent({
             for(let i = 0; i < this.timesheets.length; i++){
                 let totalHours = (new Date(this.timesheets[i].time_out).getTime() -  new Date(this.timesheets[i].time_in).getTime()) / (1000*60*60);
                 this.timesheets[i].totalHours = totalHours.toFixed(2);
-                this.timesheets[i].totalPay = totalHours * lStore.get('user_info').hourly_rate;
-                this.timesheets[i].totalPay = this.timesheets[i].totalPay.toFixed(2);
+                this.timesheets[i].total_earned = parseFloat(this.timesheets[i].total_earned).toFixed(2);
             }
-            
         })
-
     },
     methods: {
         dateFormat,
@@ -203,7 +219,7 @@ export default defineComponent({
                 &_joins=mobile_schedule
                 &_on=mobile_timerecord.schedule_id=mobile_schedule.id
                 &_GTE_time_in=${currentDate}
-                &_LSE_time_out=${tommDate}
+                &_LSE_time_in=${tommDate}
                 &_batch=true`
             ).then(res=>{
                 this.timesheets = [];
@@ -212,8 +228,7 @@ export default defineComponent({
                 for(let i = 0; i < this.timesheets.length; i++){
                     let totalHours = (new Date(this.timesheets[i].time_out).getTime() -  new Date(this.timesheets[i].time_in).getTime()) / (1000*60*60);
                     this.timesheets[i].totalHours = totalHours.toFixed(2);
-                    this.timesheets[i].totalPay = totalHours * lStore.get('user_info').hourly_rate;
-                    this.timesheets[i].totalPay = this.timesheets[i].totalPay.toFixed(2);
+                    this.timesheets[i].total_earned = parseFloat(this.timesheets[i].total_earned).toFixed(2);
                 }
             })
         }
@@ -252,7 +267,7 @@ ion-avatar img {
 }
 
 ion-header {
-    z-index: 999;
+    z-index: 200;
 }
 
 ion-header.hidden {
@@ -430,6 +445,87 @@ ion-text h2 small {
 
 .attend_profile ion-card-subtitle {
     color: #fff;
+}
+
+.Timesheets_modal{
+    z-index: -1;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: rgba(0, 0, 0, 0.5);
+    width: 100vw;
+    height: 100vh;
+    transition: 0.4s;
+    opacity: 0;
+    overflow: auto;
+    padding-bottom: 50px;
+    align-items:center;
+}
+
+.Timesheets_modal.openModal{
+    z-index: 999;
+    opacity:1;
+}
+
+.Timesheets_modal_box{
+    background: #fff;
+    color: #000;
+    padding: 10px;
+    margin: 20px auto;
+    border-radius: 10px;
+    transition: 0.4s;
+    transform: translateY(-100%);
+    width: 0%;
+    overflow: hidden;
+}
+
+.Timesheets_modal.openModal .Timesheets_modal_box{
+    transform: translateY(0%);
+    width: calc(100% - 40px);
+}
+
+.Timesheets_modal.openModal .Timesheets_modal_box{
+    transform: translateY(0%);
+}
+
+.Timesheets_modal_box h2{
+    margin: 0;
+    font-size: 20px;
+    border-bottom: 1px solid #eee;
+    padding: 10px 0;
+}
+
+.Timesheets_modal_box .grid{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap:10px;
+    margin: 20px 0;
+}
+
+.Timesheets_modal_box .grid > p{
+    font-weight: normal;
+    width:30%;
+    color: #555;
+    font-size: 15px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.Timesheets_modal_box .grid > div{
+    width:63%;
+}
+
+.Timesheets_modal_box .grid > div:nth-child(2n) > span{
+    background: #edf8ff;
+    border-bottom: 1px solid #c0e7ff;
+    padding: 7px;
+    line-height: 1.5;
+    color: #555;
+    font-size: 15px;
+    width: 100%;
+    display: block;
+    border-radius: 10px;
 }
 
 </style>

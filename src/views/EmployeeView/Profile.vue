@@ -10,6 +10,9 @@
             <ion-header>Profile</ion-header>
         </ion-toolbar>
         <ion-content fullscreen="true">
+            <ion-refresher style="position:relative; z-index:999;" slot="fixed" @ionRefresh="handleRefresh($event)">
+                <ion-refresher-content refreshing-spinner="crescent"></ion-refresher-content>
+            </ion-refresher>
 
             <ion-avatar>
                 <img :src="user.profile_img"/>
@@ -127,7 +130,7 @@
 <script>
 import { defineComponent } from 'vue';
 import axiosA from 'axios';
-import { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, actionSheetController, loadingController, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal, IonInput } from '@ionic/vue';
+import { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, actionSheetController, loadingController, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal, IonInput, IonRefresher, IonRefresherContent } from '@ionic/vue';
 import { mail, call, location, create, home, camera, cloudUpload, closeCircle } from 'ionicons/icons';
 import { Camera, CameraResultType } from '@capacitor/camera';
 import { lStore, axios, ImageDataConverter} from '@/functions';
@@ -135,9 +138,16 @@ import router from '@/router';
 
 export default defineComponent({
     name: 'EmployeeProfile',
-    components: { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal, IonInput },
+    components: { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal, IonInput, IonRefresher, IonRefresherContent },
     setup() {
-        return { mail, call, location, create, home, camera, cloudUpload, closeCircle };
+        const handleRefresh = (event) => {
+            setTimeout(() => {
+                window.location.reload();
+                event.target.complete();
+            }, 2000);
+        };
+
+        return { handleRefresh, mail, call, location, create, home, camera, cloudUpload, closeCircle };
     },
     data() {
         return {
