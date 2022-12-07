@@ -11,7 +11,7 @@
             <ion-avatar>
                 <img :src="user.profile_img"/>
                 <ion-buttons class="camera-icon">
-                    <ion-icon :icon="camera"></ion-icon>
+                    <ion-icon :icon="camera" @click="setProfileImg"></ion-icon>
                 </ion-buttons>
             </ion-avatar>
             <h2 class="title_name">{{ user.firstname }} {{ user.lastname }}<span>{{ user.role }}</span></h2>
@@ -107,9 +107,11 @@
 
 <script>
 import { defineComponent } from 'vue';
+import axiosA from 'axios';
 import { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, actionSheetController, loadingController, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal } from '@ionic/vue';
 import { mail, call, location, create, home, camera, cloudUpload, closeCircle } from 'ionicons/icons';
-import { lStore, axios} from '@/functions';
+import { Camera, CameraResultType } from '@capacitor/camera';
+import { lStore, axios, ImageDataConverter} from '@/functions';
 import router from '@/router';
 
 
@@ -257,6 +259,30 @@ export default defineComponent({
             }
             
             this.chosenFile = [];
+        },
+        async setProfileImg(){
+            const image = await Camera.getPhoto({
+                quality: 90,
+                allowEditing: true,
+                resultType: CameraResultType.DataUrl
+            });
+
+            let blobObj = new ImageDataConverter(image.dataUrl);
+            let blob = blobObj.dataURItoBlob()
+            let form = new FormData();
+            form.append('file',blob,'file.'+blobObj.getMimeString().replace(/\w+\//g,''));
+
+            axiosA({
+                method:'post',
+                url: 'https://4angelshc.com/mobile/users/update?id='+lStore.get('user_id'),
+                data : form
+            }).then(res=>{
+                let userFromLStore = lStore.get('user_info')
+                userFromLStore.profile_img = image.dataUrl;
+                lStore.set('user_info', userFromLStore);
+                window.location.reload();
+
+            })
         }
     }
 });

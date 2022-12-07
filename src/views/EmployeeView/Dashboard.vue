@@ -73,7 +73,7 @@
                 </ion-item>
                 <ion-item lines="none">
                     <ion-label>
-                        <p>Date: <span v-if="nextSched.shift_date == ''">-----</span> <span>{{dateFormat('%sm %d',nextSched.shift_date)}} - {{dateFormat('%sm %d',nextSched.shift_date_end)}}</span></p>
+                        <p>Date: <span v-if="nextSched.shift_date == ''">-----</span> <span>{{dateFormat('%sm %d',nextSched.shift_date)}}</span></p>
                     </ion-label>
                     <ion-label>
                         <p>Time Shift: <span v-if="nextSched.shift_start == '' && nextSched.shift_end == ''">-----</span> <span>{{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_start)}} - {{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_end)}}</span></p>
@@ -96,7 +96,7 @@
                     <ion-label>
                         <h1>{{ upSchedule.title }}</h1>
                         <p>{{ upSchedule.name }}</p>
-                        <p>{{ dateFormat('%sm %d',upSchedule.shift_date)}} - {{ dateFormat('%sm %d',upSchedule.shift_date_end)}}</p>
+                        <p>{{ dateFormat('%sm %d',upSchedule.shift_date)}}</p>
                         <p>{{ dateFormat('%h:%i%a',upSchedule.shift_date+' '+upSchedule.shift_start) }} - {{ dateFormat('%h:%i%a',upSchedule.shift_date+' '+upSchedule.shift_end) }}</p>
                         <p></p>
                     </ion-label>
@@ -237,7 +237,7 @@ export default defineComponent({
             this.seconds= '';
             this.todays= false;
             this.upcomings= true;
-            this.upcoming= [{}];
+            this.upcoming= [];
             this.nextSched={};
         },
         scheduleData(e) {
@@ -356,139 +356,96 @@ export default defineComponent({
                 })
             }
         },
-        fetchScheds(){
+        async fetchScheds(){
             let currentDate = new Date();
             let currentDateString = currentDate.toLocaleDateString().split('/');
             currentDateString = formatDateString(currentDateString[2] + '-' + currentDateString[0] + '-' + currentDateString[1]).replaceAll(' ','');
 
-            let tommDate = new Date();
-            tommDate.setDate(tommDate.getDate()+1);
-            tommDate = tommDate.toLocaleDateString();
-            let tommDateArr = tommDate.split('/');
-            tommDate = formatDateString(tommDateArr[2]+'-'+tommDateArr[0]+'-'+tommDateArr[1]).replaceAll(' ','');
+            let weekDate = new Date();
+            weekDate.setDate(weekDate.getDate()+7);
+            weekDate = weekDate.toLocaleDateString();
+            let weekDateArr = weekDate.split('/');
+            let weekDateString = formatDateString(weekDateArr[2]+'-'+weekDateArr[0]+'-'+weekDateArr[1]).replaceAll(' ','');
 
-            let checkResponse = 0;
-
-            axios.post(`assigned?user_id=${lStore.get('user_id')}
-            &_batch=true
-            &_joins=mobile_schedule,mobile_branches
-            &_on=mobile_assignedusers.schedule_id=mobile_schedule.id,mobile_schedule.branch_id=mobile_branches.id
-            &_LSE_mobile_schedule:shift_date=${currentDateString}
-            &_GTE_mobile_schedule:shift_date_end=${currentDateString}
-            &_orderby=shift__date_ASC,shift__start`).then(res=>{
-                this.upcoming = res.data.result;
-                checkResponse++;
-            });
-
-            axios.post(`timerecord?
-            user_id=${lStore.get('user_id')}
-            &_batch=true
-            &_joins=mobile_schedule
-            &_on=mobile_timerecord.schedule_id=mobile_schedule.id
-            &_GTE_time_in=${currentDateString}
-            &_LSE_time_out=${tommDate}`).then(res=>{
-                this.timesheets = res.data.result;
-                checkResponse++;
-            });
-
-            let resultChecker = setInterval(()=>{
-                if(checkResponse == 2){
-                    let timesheetsSchedIds = [];
-                    let schedIndex = -1;
-
-                    if(this.timesheets != null){
-                        this.timesheets.forEach(el => timesheetsSchedIds.push(el.id));
-                        for(let i = 0; i < this.upcoming.length; i++){
-                            if(!timesheetsSchedIds.includes(this.upcoming[i].schedule_id) && schedIndex == -1){
-                                this.nextSched = this.upcoming[i];
-                                this.nextSched.id = this.upcoming[i].schedule_id;
-                            }
-                        }
-
-                        let newUpcoming = [];
-
-                        for(let i = 0; i < this.upcoming.length; i++){
-                            if(!timesheetsSchedIds.includes(this.upcoming[i].schedule_id)){
-                                newUpcoming.push(this.upcoming[i]);
-                            }
-                        }
-                        this.upcoming = newUpcoming;
-                    }else{
-                        this.nextSched = this.upcoming[0];
-                        this.nextSched.id = this.upcoming[0].schedule_id;
-                    }
-                    
-                    
-
-                    
-                    clearInterval(resultChecker);
-
-                }
-            },100);
-
-                localStorage.removeItem('async_timerecord_timein');
-                localStorage.removeItem('async_timerecord_timeout');
-
-                axios.post(`timerecord?user_id=${lStore.get('user_id')}&_orderby=time__in_DESC`).then(res=>{
-                    if(res.data.result == null) return;
-                    let obj = res.data.result;
-
-                    if(obj.schedule_id != this.nextSched.id){
-                        console.log(this.nextSched.id);
-                        if(obj.time_out == null){
-                            lStore.set('timerecord_timein',{
-                                id:obj.id,
-                                time_in:obj.time_in,
-                                schedule_id:obj.schedule_id
-                            })
-                            
-                            axios.post(`assigned?_select=mobile_schedule.id,
-                            mobile_schedule.title,
-                            mobile_schedule.shift_start,
-                            mobile_schedule.shift_end,
-                            mobile_schedule.shift_date,
-                            mobile_schedule.shift_date_end,
-                            mobile_branches.name,
-                            mobile_branches.location&_joins=mobile_schedule,mobile_branches
-                            &_on=mobile_assignedusers.schedule_id=mobile_schedule.id,mobile_schedule.branch_id=mobile_branches.id&schedule_id=${obj.schedule_id}&user_id=${lStore.get('user_id')}`).then(res=>{
-                                if(res.data.result != null) {this.nextSched = res.data.result;}
-                            });
-                        }
-
-                        
-                    }else{
-
-                        if(obj.time_out == null) {
-                            lStore.set('timerecord_timein',{
-                                id:obj.id,
-                                time_in:obj.time_in,
-                                schedule_id:obj.schedule_id
-                            })
-
-                        
-                            lStore.set('timerecord_timeout',{
-                                id:obj.id,
-                                time_out:obj.time_out,
-                                schedule_id:obj.schedule_id
-                            })
-                        }else{
-                            this.nextSched = {};
-                        }
-                    }
-
-                    if(lStore.get('timerecord_timein') != null){
-                        this.disabled2 = true;
-                        if(lStore.get('timerecord_timeout') == null) this.disabled = false;
-                        this.clockIn = new Date(lStore.get('timerecord_timein').time_in).toLocaleTimeString();   
-                    }
-                    console.log(this.clockOut);
-                    
-                    if(lStore.get('timerecord_timeout') != null){
-                        if(lStore.get('timerecord_timeout').time_out == null) return;
-                        this.disabled = true;
-                        this.clockOut = new Date(lStore.get('timerecord_timeout').time_out).toLocaleTimeString();
-                    }
+            let resp = await axios.post(`assigned/joint?range=${currentDateString},${weekDateString}&_batch=true&user_id=${lStore.get('user_id')}`);
+            if(resp.data == null || !resp.data.success) return;
+            let updatedAssignedResults = [];
+            let timerecordIds = {};
+            let resp2 = await axios.post(`timerecord?_select=id,time_in,time_out,schedule_id&_batch=true&user_id=${lStore.get('user_id')}&_LSE_time_in=${weekDateString}&_orderby=time__in_ASC&_limit=10`);
+            if(resp2.data != null && resp2.data.success) {
+                resp2.data.result.forEach(el=>{
+                    timerecordIds[el.schedule_id] = el;
+                    lStore.set('timerecord_timein',el);
                 });
+                for(let t in timerecordIds)
+                if(resp.data.result.filter(el=>el.id==t).length == 0)
+                    if(timerecordIds[t].time_out == null)
+                        unfinishedTimerecords.push(t);
+            }
+
+            let unfinishedTimerecords = [];
+
+            
+            
+            console.log(resp.data.result,'test');
+
+            resp.data.result.forEach(el=>{
+                let elementDateTime = new Date(el.shift_date+' '+el.shift_end);
+                let elementDateTime2 = new Date(el.shift_date+' '+el.shift_start);
+                if(elementDateTime2.getTime() > elementDateTime.getTime())
+                    elementDateTime =  new Date(el.shift_date+' '+el.shift_end).getTime() + 86400000;
+                else 
+                    elementDateTime =  new Date(el.shift_date+' '+el.shift_end).getTime();
+                let currentDateTime = currentDate.getTime();
+
+                
+
+                if(elementDateTime > currentDateTime){
+                    console.log(timerecordIds[el.id],el.id);
+                    if(timerecordIds[el.id] != null){
+                        if(timerecordIds[el.id].time_out == null) updatedAssignedResults.push(el);
+                    }else{
+                        
+                        updatedAssignedResults.push(el);
+                    }
+                }
+            });
+
+            console.log(unfinishedTimerecords);
+            let finishedPendingTimerecord = false;
+
+            unfinishedTimerecords.forEach(async (el)=>{
+                let resp3 = await axios.post(`schedule?_select=
+                mobile_schedule.id,
+                title,
+                description,
+                max_employees,
+                shift_start,
+                shift_end,
+                shift_date,
+                status,
+                branch_id,
+                color,
+                mobile_branches.location,
+                mobile_branches.name&id=${el}&_joins=mobile_branches&_on=mobile_schedule.branch_id=mobile_branches.id`);
+                if(resp3.data == null || !resp3.data.success) return;
+                console.log(resp3.data);
+                updatedAssignedResults = [resp3.data.result,...updatedAssignedResults];
+                if(new Date(updatedAssignedResults[0].shift_date) <= new Date(currentDateString) && (this.nextSched == null || !finishedPendingTimerecord)) this.nextSched = updatedAssignedResults[0];
+                finishedPendingTimerecord = true;
+                this.upcoming = updatedAssignedResults;
+                this.clockIn = new Date(timerecordIds[el].time_in).toLocaleTimeString();
+                
+            });
+            console.log(updatedAssignedResults[0].shift_date,currentDateString);
+
+            if(new Date(updatedAssignedResults[0].shift_date) <= new Date(currentDateString)) this.nextSched = updatedAssignedResults[0];
+            this.upcoming = updatedAssignedResults;
+
+
+            
+            
+
         }
     }
 });

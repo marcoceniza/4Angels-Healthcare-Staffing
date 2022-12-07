@@ -1,9 +1,25 @@
 <template>
     <ion-page>
+        <div class="Timesheets_modal" :class="{openModal:openModal}">
+            <div class="Timesheets_modal_box">
+                <h2>{{openedSchedule.title}}</h2>
+                <div class="grid">
+                    <p>Schedule Date:</p><div><span>{{dateFormat('%lm %d, %y','2022-01-01 '+openedSchedule.shift_date)}}</span></div>
+                    <p>Schedule Start:</p><div><span>{{dateFormat('%h:%i%a','2022-01-01 '+openedSchedule.shift_start)}}</span></div>
+                    <p>Schedule End:</p><div><span>{{dateFormat('%h:%i%a','2022-01-01 '+openedSchedule.shift_end)}}</span></div>
+                    <p>Branch:</p><div><span>{{openedSchedule.name}}</span></div>
+                    <p>Branch Location:</p><div><span>{{openedSchedule.location}}</span></div>
+                    <p>Description:</p><div><span>{{openedSchedule.description}}</span></div>
+                </div>
+
+                <ion-button expand="block" @click="openModal=false">Close</ion-button>
+            </div>
+        </div>
+
         <ion-header class="header" no-border collapse="fade">
             <ion-toolbar class="main-header">
                 <ion-buttons slot="end">
-                    <ion-avatar @click="$router.push('/supervisor/profile')">
+                    <ion-avatar @click="$router.push('/employee/profile')">
                         <img :src="user.profile_img"/>
                     </ion-avatar>
                 </ion-buttons>
@@ -14,9 +30,10 @@
             </ion-toolbar>
         </ion-header>
         <ion-content fullscreen="true">
+            
 
-            <ion-list class="ion-margin-top" v-for="st in schedulesToday" :key="st.id" :class="{schedTaken: takenSchedulesToday.includes(st.id)}">
-                <ion-item button lines="none" @click="openActionSheet(st.id)">
+            <ion-list class="ion-margin-top" v-for="st in schedulesToday" :key="st.id">
+                <ion-item button lines="none" @click="openActionSheet(st.id)" :style="'border-left: 6px solid '+st.color">
                     <ion-label>
                         <h1>{{st.title}}</h1>
                         <p>Start Time: {{dateFormat('%h:%i%a',selectedDate+' '+st.shift_start)}}</p>
@@ -34,7 +51,7 @@
 import { defineComponent } from 'vue';
 import { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, actionSheetController, IonTitle, IonButtons } from '@ionic/vue';
 import { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, menu } from 'ionicons/icons';
-import { axios, lStore,dateFormat } from '@/functions';
+import { axios, lStore,dateFormat, openToast } from '@/functions';
 
 export default defineComponent({
     name: 'SchedulesView',
@@ -64,6 +81,8 @@ export default defineComponent({
             facility: '',
             getMonthToday: '',
             isOpen: false,
+            openModal: false,
+            openedSchedule:{}
         }
     },
     created() {
@@ -77,60 +96,65 @@ export default defineComponent({
         let date = new Date().toLocaleDateString();
         date = date.split('/')[2]+'-'+date.split('/')[0]+'-'+date.split('/')[1];
         this.selectedDate = date;
-        axios.post(`schedule?_LSE_shift_date=${date}&_GTE_shift_date_end=${date}&_batch=true&_joins=mobile_branches&_on=mobile_schedule.branch_id=mobile_branches.id
-        &_select=mobile_schedule.id,
-        mobile_schedule.title,
-        mobile_schedule.shift_start,
-        mobile_schedule.shift_end,
-        mobile_schedule.shift_date,
-        mobile_schedule.shift_date_end,
-        mobile_branches.name`).then(res=>{
+        axios.post(`assigned/joint?range=${date}&_batch=true&exclude_timerecord`).then(res=>{
             if(res.data.result == null) {
                 this.schedulesToday = [];
                 return;
             }
             this.schedulesToday = res.data.result;
             
-            this.takenSchedulesToday = [];
-            this.schedulesToday.forEach(el=>{
-                axios.post('assigned?user_id='+lStore.get('user_id')+'&schedule_id='+el.id,null,null).then(res=>{
-                    if(res.data.result == null) return;
-                    this.takenSchedulesToday.push(el.id);
-                })
-            })
+            // this.takenSchedulesToday = [];
+            // this.schedulesToday.forEach(el=>{
+            //     axios.post('assigned?user_id='+lStore.get('user_id')+'&schedule_id='+el.id,null,null).then(res=>{
+            //         if(res.data.result == null) return;
+            //         this.takenSchedulesToday.push(el.id);
+            //     })
+            // })
 
-            this.takenSchedulesToday = this.schedulesToday.filter(el=>this.takenSchedulesToday.includes(el.id));
-            console.log(this.takenSchedulesToday);
+            // this.takenSchedulesToday = this.schedulesToday.filter(el=>this.takenSchedulesToday.includes(el.id));
+            // console.log(this.takenSchedulesToday);
         })
     },
     methods: {
         dateFormat,
         async openActionSheet(id) {
+            let selectedSched = this.schedulesToday.filter(el=>el.id == id);
+            selectedSched = selectedSched[0];
+            let actionSheetButtons = [
+                {
+                    text: 'View Schedule Details',
+                    data: {
+                        action: 'view',
+                    },
+                },
+                {
+                    text: 'Cancel',
+                    role: 'cancel',
+                    data: {
+                        action: 'cancel',
+                    },
+                }
+            ];
+
+            if(!this.hasAlreadyApplied(selectedSched)){
+                actionSheetButtons.push({
+                    text: 'Apply Shift',
+                    data: {
+                        action: 'apply',
+                    }
+                });
+            }else{
+                actionSheetButtons.push({
+                    text: 'Request Change',
+                    data: {
+                        action: 'request change',
+                    }
+                });
+            }
+
             const openSheet = await actionSheetController.create({
                 header: 'Schedule Action',
-                buttons: [
-                    {
-                        text: 'Apply Shift',
-                        role: 'destructive',
-                        data: {
-                            action: 'apply',
-                        },
-                    },
-                    {
-                        text: 'Request Change',
-                        role: 'destructive',
-                        data: {
-                            action: 'request change',
-                        },
-                    },
-                    {
-                        text: 'Cancel',
-                        role: 'cancel',
-                        data: {
-                            action: 'cancel',
-                        },
-                    },
-                ],
+                buttons: actionSheetButtons,
             });
 
             await openSheet.present();
@@ -138,12 +162,23 @@ export default defineComponent({
                 if(res.data == null) return;
                 if(res.data.action == 'cancel') return;
                 if(res.data.action == 'apply') {
+                    
+
+                    let schedEnd = new Date(selectedSched.shift_date+' '+selectedSched.shift_end).getTime();
+                    let curDateTime = new Date().getTime();
+                    if(curDateTime >= schedEnd) {
+                        openToast('You cannot apply for a schedule that\'s already finished!','warning');
+                        return;
+                    }
                     axios.post('assigned/create',null,{
                         user_id: lStore.get('user_id'),
                         schedule_id: id
-                    }).then(res2=>{
-                        console.log(res2.data);
+                    }).then(()=>{
+                        window.location.reload();
                     })
+                }else if(res.data.action == 'view'){
+                    this.openedSchedule = selectedSched;
+                    this.openModal = true;
                 }
             });
 
@@ -151,33 +186,20 @@ export default defineComponent({
         setOpen() {
             this.isOpen = true;
         },
+        hasAlreadyApplied(sched){
+            let emp = [];
+            if(sched.assignedEmps != null) emp = sched.assignedEmps.filter(el=>el.user_id == lStore.get('user_id'))
+            return emp.length > 0
+        },
         setDate(e){
             let date = e.target.value.match(/^[0-9]+-[0-9]+-[0-9]+/)[0];
             this.selectedDate = date;
-            axios.post(`schedule?_LSE_shift_date=${date}&_GTE_shift_date_end=${date}&_batch=true&_joins=mobile_branches&_on=mobile_schedule.branch_id=mobile_branches.id
-            &_select=mobile_schedule.id,
-            mobile_schedule.title,
-            mobile_schedule.shift_start,
-            mobile_schedule.shift_end,
-            mobile_schedule.shift_date,
-            mobile_schedule.shift_date_end,
-            mobile_branches.name`).then(res=>{
+            axios.post(`assigned/joint?range=${date}&_batch=true&exclude_timerecord`).then(res=>{
                 if(res.data.result == null) {
                     this.schedulesToday = [];
                     return;
                 }
                 this.schedulesToday = res.data.result;
-                
-                this.takenSchedulesToday = [];
-                this.schedulesToday.forEach(el=>{
-                    axios.post('assigned?user_id='+lStore.get('user_id')+'&schedule_id='+el.id,null,null).then(res=>{
-                        if(res.data.result == null) return;
-                        this.takenSchedulesToday.push(el.id);
-                    })
-                })
-
-                this.takenSchedulesToday = this.schedulesToday.filter(el=>this.takenSchedulesToday.includes(el.id));
-                console.log(this.takenSchedulesToday);
             })
         }
     }
@@ -201,7 +223,7 @@ ion-avatar img {
 }
 
 ion-header {
-    z-index: 999;
+    z-index: 200;
 }
 
 ion-header.hidden {
@@ -305,6 +327,7 @@ ion-col h2 small {
 }
 
 ion-list ion-item {
+    border: 1px solid #ddd;
     border-left: 6px solid #999999;
     margin-bottom: 6px;
 }
@@ -357,8 +380,87 @@ ion-select {
     display: block;
 }
 
-/* .schedTaken{
-    pointer-events: none;
-    opacity: 0.5;
-} */
+.schedTaken ion-item{
+    border-left: 6px solid #f44;
+}
+
+.Timesheets_modal{
+    z-index: -1;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: rgba(0, 0, 0, 0.5);
+    width: 100vw;
+    height: 100vh;
+    transition: 0.4s;
+    opacity: 0;
+    overflow: auto;
+    padding-bottom: 50px;
+    display:flex;
+    align-items:center;
+}
+
+.Timesheets_modal.openModal{
+    z-index: 999;
+    opacity:1;
+}
+
+.Timesheets_modal_box{
+    background: #fff;
+    color: #000;
+    padding: 10px;
+    margin: 20px auto;
+    border-radius: 10px;
+    transition: 0.4s;
+    transform: translateY(-100%);
+    width: 0%;
+    overflow: hidden;
+}
+
+.Timesheets_modal.openModal .Timesheets_modal_box{
+    transform: translateY(0%);
+    width: calc(100% - 40px);
+}
+
+.Timesheets_modal_box h2{
+    margin: 0;
+    font-size: 20px;
+    border-bottom: 1px solid #eee;
+    padding: 10px 0;
+}
+
+.Timesheets_modal_box .grid{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap:10px;
+    margin: 20px 0;
+}
+
+.Timesheets_modal_box .grid > p{
+    font-weight: normal;
+    width:30%;
+    color: #555;
+    font-size: 15px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+
+
+.Timesheets_modal_box .grid > div{
+    width:63%;
+}
+
+.Timesheets_modal_box .grid > div:nth-child(2n) > span{
+    background: #edf8ff;
+    border-bottom: 1px solid #c0e7ff;
+    padding: 7px;
+    line-height: 1.5;
+    color: #555;
+    font-size: 15px;
+    width: 100%;
+    display: block;
+    border-radius: 10px;
+}
 </style>
