@@ -34,7 +34,9 @@
             </ion-toolbar>
         </ion-header>
         <ion-content fullscreen="true">
-            
+            <ion-refresher style="position:relative; z-index:999;" slot="fixed" @ionRefresh="handleRefresh($event)">
+                <ion-refresher-content refreshing-spinner="crescent"></ion-refresher-content>
+            </ion-refresher>
 
             <ion-list class="ion-margin-top">
                 <ion-item v-for="test in timesheets" :key="test.user_id" @click="quedTimesheet = test;openModal=true">
@@ -110,13 +112,13 @@
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonHeader, IonToolbar, menuController, IonDatetime, IonModal, IonTitle } from '@ionic/vue';
+import { IonContent, IonPage, IonHeader, IonToolbar, menuController, IonDatetime, IonModal, IonTitle, IonRefresher, IonRefresherContent } from '@ionic/vue';
 import { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, menu, close, arrowBack, person, briefcase, time, timer } from 'ionicons/icons';
 import { lStore, axios, dateFormat, formatDateString } from '@/functions';
 
 export default defineComponent({
     name: 'TmesheetsView',
-    components: { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, IonModal, IonTitle },
+    components: { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, IonModal, IonTitle, IonRefresher, IonRefresherContent },
     setup() {
         const logScrolling3 = (e) => {
             if (e.detail.scrollTop >= 50) {
@@ -192,9 +194,16 @@ export default defineComponent({
         closeMenu() {
             menuController.close('app-menu');
         },
+        handleRefresh(e){
+            this.setDate(this.selectedDate);
+            e.target.complete();
+        },
         setDate(e){
-            let date = e.target.value.match(/^[0-9]+-[0-9]+-[0-9]+/)[0];
-            this.selectedDate = date;
+            let date = e;
+            if(e.target != null){
+                date = e.target.value.match(/^[0-9]+-[0-9]+-[0-9]+/)[0];
+                this.selectedDate = date;
+            }
 
             let currentDate = new Date(date).toLocaleDateString();
             let tommDate = new Date(date);
@@ -452,6 +461,7 @@ ion-text h2 small {
     overflow: auto;
     padding-bottom: 50px;
     align-items:center;
+    display:flex;
 }
 
 .Timesheets_modal.openModal{

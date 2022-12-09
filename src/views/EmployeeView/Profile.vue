@@ -4,7 +4,7 @@
             <ion-buttons @click="setOpen(true)" class="create-icon2">
                 <ion-icon :icon="cloudUpload" slot="start"></ion-icon>
             </ion-buttons>
-            <ion-buttons class="create-icon">
+            <ion-buttons class="create-icon" @click="setOpen2(true)">
                 <ion-icon :icon="create" slot="end"></ion-icon>
             </ion-buttons>
             <ion-header>Profile</ion-header>
@@ -17,6 +17,9 @@
             <h2 class="title_name">{{ user.firstname }} {{ user.lastname }}<span>{{ user.role }}</span></h2>
         </ion-toolbar>
         <ion-content fullscreen="true">
+            <ion-refresher style="position:relative; z-index:999;" slot="fixed" @ionRefresh="handleRefresh($event)">
+                <ion-refresher-content refreshing-spinner="crescent"></ion-refresher-content>
+            </ion-refresher>
             <ion-list class="ion-margin-top">
                 <ion-item lines="full">
                     <ion-icon :icon="mail" slot="start" color="primary"></ion-icon>
@@ -101,6 +104,36 @@
                 </ion-content>
             </ion-modal>
 
+            <ion-modal :is-open="isOpen2">
+                <ion-header>
+                    <ion-toolbar>
+                        <ion-title color="light">UPDATE PROFILE</ion-title>
+                    </ion-toolbar>
+                </ion-header>
+                <ion-content class="ion-padding">
+                    <ion-list>
+                        <ion-item>
+                            <ion-label position="stacked">Firstname</ion-label>
+                            <ion-input v-model="user.firstname"></ion-input>
+                        </ion-item>
+                        <ion-item>
+                            <ion-label position="stacked">Lastname</ion-label>
+                            <ion-input v-model="user.lastname"></ion-input>
+                        </ion-item>
+                        <ion-item>
+                            <ion-label position="stacked">Email</ion-label>
+                            <ion-input v-model="user.email_address"></ion-input>
+                        </ion-item>
+                        <ion-item>
+                            <ion-label position="stacked">Address</ion-label>
+                            <ion-input v-model="user.address"></ion-input>
+                        </ion-item>
+                    </ion-list>
+                    <ion-button class="ion-margin-bottom" expand="block" color="primary" size="large" @click="setOpen2(false); updateProfile()">Update</ion-button>
+                    <ion-button expand="block" color="dark" size="large" @click="setOpen2(false)">Close</ion-button>
+                </ion-content>
+            </ion-modal>
+
         </ion-content>
     </ion-page>
 </template>
@@ -108,16 +141,16 @@
 <script>
 import { defineComponent } from 'vue';
 import axiosA from 'axios';
-import { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, actionSheetController, loadingController, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal } from '@ionic/vue';
+import { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, actionSheetController, loadingController, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal, IonInput,IonRefresher, IonRefresherContent } from '@ionic/vue';
 import { mail, call, location, create, home, camera, cloudUpload, closeCircle } from 'ionicons/icons';
 import { Camera, CameraResultType } from '@capacitor/camera';
-import { lStore, axios, ImageDataConverter} from '@/functions';
+import { lStore, axios, ImageDataConverter, openToast} from '@/functions';
 import router from '@/router';
 
 
 export default defineComponent({
     name: 'EmployeeProfile',
-    components: { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal },
+    components: { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal, IonInput,IonRefresher, IonRefresherContent  },
     setup() {
         return { mail, call, location, create, home, camera, cloudUpload, closeCircle };
     },
@@ -131,7 +164,8 @@ export default defineComponent({
             files:[],
             chosenFile:[],
             bulkSelect:false,
-            uploading:{}
+            uploading:{},
+            isOpen2: false
         }
     },
     created() {
@@ -146,9 +180,24 @@ export default defineComponent({
         
     },
     methods: {
-
+        handleRefresh(event){
+            setTimeout(() => {
+                event.target.complete();
+                window.location.reload();
+            }, 2000);
+        },
         setOpen(isOpen) {
             this.isOpen = isOpen;
+        },
+        setOpen2(isOpen2) {
+            this.isOpen2 = isOpen2;
+        },
+        updateProfile() {
+            axios.post('users/update?id='+lStore.get('user_id'),null, this.user).then(res => {
+                if(!res.data.success) return;
+                openToast('Profile Information Updated!', 'success');
+                lStore.set('user_info',this.user);
+            });
         },
         fileType(filename){
             if(typeof filename != 'string') return; 
@@ -272,17 +321,56 @@ export default defineComponent({
             let form = new FormData();
             form.append('file',blob,'file.'+blobObj.getMimeString().replace(/\w+\//g,''));
 
-            axiosA({
-                method:'post',
-                url: 'https://4angelshc.com/mobile/users/update?id='+lStore.get('user_id'),
-                data : form
-            }).then(res=>{
-                let userFromLStore = lStore.get('user_info')
-                userFromLStore.profile_img = image.dataUrl;
-                lStore.set('user_info', userFromLStore);
-                window.location.reload();
-
+            let action = await actionSheetController.create({
+                header: 'Confirm Profile Image?',
+                buttons: [
+                    {
+                        text: 'Confirm Profile',
+                        data: {
+                            action: 'confirm',
+                        },
+                    },
+                    {
+                        text: 'Choose Another',
+                        data: {
+                            action: 'redo',
+                        },
+                    },
+                    {
+                        text: 'Cancel',
+                        role: 'cancel',
+                        data: {
+                            action: 'cancel',
+                        },
+                    }
+                ]
             })
+
+            await action.present();
+
+            action.onDidDismiss().then(res=>{
+                if(res.data == null) return;
+                if(res.data.action == 'cancel') return;
+                if(res.data.action == 'redo') {
+                    this.setProfileImg();
+                    return;
+                }
+                if(res.data.action == 'confirm') {
+                    axiosA({
+                        method:'post',
+                        url: 'https://4angelshc.com/mobile/users/update?id='+lStore.get('user_id'),
+                        data : form
+                    }).then(()=>{
+                        let userFromLStore = lStore.get('user_info')
+                        userFromLStore.profile_img = image.dataUrl;
+                        lStore.set('user_info', userFromLStore);
+                        window.location.reload();
+                    })
+                }
+
+            });
+
+            
         }
     }
 });
@@ -304,9 +392,12 @@ ion-card {
 }
 
 ion-toolbar {
-    min-height: 88px;
+    min-height: 0;
 }
 
+ion-title {
+    font-size: 18px;
+}
 ion-header {
     box-shadow: none; 
     text-align: center; 
@@ -425,6 +516,7 @@ ion-toolbar {
 .uploading .file_disp .fileicon{animation-name:uploading;animation-duration: 2s;animation-iteration-count: infinite;}
 .file_vwr_close{margin-top: 20px;padding: 10px;width: 100px;background: #bb4a36;border-radius: 5px;}
 .file_vwr_close:active{background: #7c3225;}
+ion-avatar img{aspect-ratio: 1/1;}
 
 
 @media only screen and (max-width:500px){

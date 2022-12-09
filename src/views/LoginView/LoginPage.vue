@@ -39,22 +39,120 @@
                         <ion-spinner name="dots"></ion-spinner>
                     </span>
                 </ion-button>
+                <ion-text class="privacy">By logging in, I agree to <strong>4Angels Healthcare Staffing</strong>'s <a @click="setOpen(true)" href="javascript:;">Terms of Service and Privacy Policy</a></ion-text>
             </div>
+
+            <ion-modal :is-open="isOpen">
+                <ion-header>
+                    <ion-toolbar>
+                        <ion-title>Privacy Policy and <br> Terms of Use</ion-title>
+                        <ion-buttons @click="setOpen(false)" slot="end">
+                            <ion-icon :icon="close"></ion-icon>
+                        </ion-buttons>
+                    </ion-toolbar>
+                </ion-header>
+                <ion-content class="ion-padding">
+                    <ion-list lines="none" class="ion-margin-bottom ion-padding-bottom">
+                        <ion-item>
+                            <ion-label class="ion-text-wrap">
+                                <p>This privacy policy sets out how <strong>4Angels Healthcare Staffing</strong> uses and protects any information you give to <strong>4Angels Healthcare Staffing</strong> via the website’s online forms. <strong>4Angels Healthcare Staffing</strong> is committed to ensuring that your privacy is protected and preserved.</p>
+                            </ion-label>
+                        </ion-item>
+                        <ion-item>
+                            <ion-label class="ion-text-wrap">
+                                <p>When you are asked to provide certain information by which you can be identified, rest assured that such information will only be used in accordance with this privacy statement. <strong>4Angels Healthcare Staffing</strong> may change this policy from time to time by updating this webpage. It is your responsibility to check this page from time to time to ensure that you are happy with any changes. This policy is effective as of January 1, 2023.</p>
+                            </ion-label>
+                        </ion-item>
+                        <ion-item>
+                            <ion-label class="ion-text-wrap">
+                                <h1 class="ion-margin-bottom" color="primary">Information You Provide to <strong>4Angels Healthcare Staffing</strong></h1>
+                                <p>On our online forms, we may collect the following information:</p>
+                                <ul>
+                                    <li>name or name of your client</li>
+                                    <li>mailing/delivery address</li>
+                                    <li>contact information</li>
+                                    <li>email address</li>
+                                    <li>telephone number</li>
+                                </ul>
+                            </ion-label>
+                        </ion-item>
+                        <ion-item>
+                            <ion-label class="ion-text-wrap">
+                                <p>The information collected will help <strong>4Angels Healthcare Staffing</strong> fulfill the services that are due to you. We also collect information through the website for the following purposes:</p>
+                                <ul>
+                                    <li>Internal Record Keeping</li>
+                                    <li>Client/Customer Feedback to improve services and/or products</li>
+                                    <li>Promotional emails about our services, special offers or other information which you may find interesting using the email address that you have provided to us</li>
+                                    <li>To contact you for market research purposes.</li>
+                                </ul>
+                            </ion-label>
+                        </ion-item>
+                        <ion-item>
+                            <ion-label class="ion-text-wrap">
+                                <h1>Security of Information</h1>
+                                <p>We are committed to ensuring that the information you submitted to <strong>4Angels Healthcare Staffing</strong> is secure. To prevent unauthorized access or disclosure, we have put in place suitable physical, electronic, and managerial measures to secure the information we collect online.</p>
+                            </ion-label>
+                        </ion-item>
+                        <ion-item>
+                            <ion-label class="ion-text-wrap">
+                                <h1>The Use of Cookies</h1>
+                                <p>A cookie is a small file which asks permission to be placed on your computer's hard drive. With your permission on our browser settings, the file is added and the cookie helps analyze web traffic or lets you know when you visit a particular site. Cookies allow web applications to respond to you as an individual. The web application can tailor its operations to your needs, likes, and dislikes by gathering and remembering information about your preferences.</p>
+                            </ion-label>
+                        </ion-item>
+                        <ion-item>
+                            <ion-label class="ion-text-wrap">
+                                <p>We use traffic log cookies to identify which pages are being used as this helps <strong>4Angels Healthcare Staffing</strong> analyze data about web page traffic which will be used to improve our website in fulfilling customer needs. We only use this information for statistical analysis purposes and then the data is subsequently removed from the system.</p>
+                            </ion-label>
+                        </ion-item>
+                        <ion-item>
+                            <ion-label class="ion-text-wrap">
+                                <p>Please note that a cookie will NOT give us access to your computer or any information about you, other than the data you choose to share with us through the <strong>4Angels Healthcare Staffing</strong> website.</p>
+                            </ion-label>
+                        </ion-item>
+                        <ion-item>
+                            <ion-label class="ion-text-wrap">
+                                <p>You can choose to accept or decline cookies. Most web browsers automatically accept cookies, but you can modify your browser settings to decline cookies once you access certain websites. Be advised that when you do decline cookies, it may prevent you from taking full advantage of the website features.</p>
+                            </ion-label>
+                        </ion-item>
+                        <ion-item>
+                            <ion-label class="ion-text-wrap">
+                                <h1>Links to Other Websites</h1>
+                                <p>Through the <strong>4Angels Healthcare Staffing</strong> website, you can link to other websites which are not under the control of <strong>4Angels Healthcare Staffing</strong>. We have no control over the nature, content, and availability of outbound third-party websites. The inclusion of any links does not necessarily imply a recommendation or endorsement of the views expressed within them. <strong>4Angels Healthcare Staffing</strong> remains independent from third-party website links.</p>
+                            </ion-label>
+                        </ion-item>
+                        <ion-item>
+                            <ion-label class="ion-text-wrap">
+                                <h1>Security of Your Personal Information</h1>
+                                <p><strong>4Angels Healthcare Staffing</strong> will not sell, distribute or forward your personal information to third parties unless we have your express and written permission or are required by law to disclose your information.</p>
+                            </ion-label>
+                        </ion-item>
+                        <ion-item>
+                            <ion-label class="ion-text-wrap">
+                                <p>You may request details of personal information which we currently hold under the Data Protection Act of 1998. Requesting this information will require a small fee. If you would like a copy of the information we have on you, please contact us.</p>
+                            </ion-label>
+                        </ion-item>
+                        <ion-item class="ion-padding-bottom">
+                            <ion-label class="ion-text-wrap">
+                                <p>If you find that any information we are currently holding on you is incorrect or incomplete, please advise us of the corrections accordingly.</p>
+                            </ion-label>
+                        </ion-item>
+                    </ion-list>
+                </ion-content>
+            </ion-modal>
         </ion-content>
     </ion-page>
 </template>
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonText, IonItem, IonLabel, IonInput, IonButton, IonCheckbox, IonSpinner } from '@ionic/vue';
+import { IonContent, IonPage, IonText, IonItem, IonLabel, IonInput, IonButton, IonCheckbox, IonSpinner, IonModal, IonList  } from '@ionic/vue';
 import { axios, validateForm, openToast, lStore } from '@/functions';
-import { eye, eyeOff } from 'ionicons/icons';
+import { eye, eyeOff, close } from 'ionicons/icons';
 import BackButton from '@/views/BackButton';
-import router from '@/router';
 
 export default defineComponent({
     name: 'LoginPage',
-    components: { IonContent, IonPage, IonText, IonItem, IonLabel, IonInput, IonButton, IonCheckbox, IonSpinner, BackButton },
+    components: { IonContent, IonPage, IonText, IonItem, IonLabel, IonInput, IonButton, IonCheckbox, IonSpinner, BackButton, IonModal, IonList },
     data() {
         return{
             loginInput: "",
@@ -63,10 +161,16 @@ export default defineComponent({
             showIcon: true,
             showIcon2: false,
             eye,
-            eyeOff
+            eyeOff,
+            close,
+            isOpen: false,
+            isOpen2: false, 
         };
     },
     methods: {
+        setOpen(isOpen) {
+            this.isOpen = isOpen;
+        },
         login() {
             let rules = {password:{isRequired:true}};
             let input = {password:this.password};
@@ -98,9 +202,10 @@ export default defineComponent({
                     lStore.set('user_info', res.data.result);
                     if(res.data.result.role != 'Employee'){
                         openToast('For Employee login only!', 'danger');
+                        return;
                     }
                     openToast('Login Success', 'primary');
-                    router.replace('/employee/dashboard');
+                    this.$router.replace('/employee/dashboard');
                 }
             });
         },
@@ -124,6 +229,44 @@ export default defineComponent({
 <style scoped>
 ion-header {
     box-shadow: none;
+}
+
+ion-label h1 {
+    margin-bottom: 12px !important;
+    color: #1f94db;
+    font-weight: bold;
+}
+
+ion-label p {
+    font-size: 15px;
+    line-height: 20px;
+    color: #555;
+}
+
+ion-label ul {
+    padding-left: 30px;
+}
+
+ion-label ul li {
+    color: #555;
+}
+
+ion-label p strong {
+    color: #1f94db;
+}
+
+ion-modal ion-icon {
+    font-size: 20px;
+}
+
+ion-title {
+    font-size: 19px;
+}
+
+.privacy{
+    text-align: center;
+    margin-top: 60px;
+    font-size: 14px;
 }
 
 .form-container {

@@ -1,7 +1,9 @@
 <template>
     <ion-page>
-        <div class="Timesheets_modal" :class="{openModal:openModal}">
-            <div class="Timesheets_modal_box">
+        
+
+        <div class="Schedule_modal" :class="{openModal:openModal}">
+            <div class="Schedule_modal_box">
                 <h2>{{openedSchedule.title}}</h2>
                 <div class="grid">
                     <p>Schedule Date:</p><div><span>{{dateFormat('%lm %d, %y','2022-01-01 '+openedSchedule.shift_date)}}</span></div>
@@ -9,6 +11,7 @@
                     <p>Schedule End:</p><div><span>{{dateFormat('%h:%i%a','2022-01-01 '+openedSchedule.shift_end)}}</span></div>
                     <p>Branch:</p><div><span>{{openedSchedule.name}}</span></div>
                     <p>Branch Location:</p><div><span>{{openedSchedule.location}}</span></div>
+                    <p>Roles:</p><div><small class="designation_chips" v-for="s,i in openedSchedule.designations" :key="i">{{s.position}}</small></div>
                     <p>Description:</p><div><span>{{openedSchedule.description}}</span></div>
                 </div>
 
@@ -16,7 +19,13 @@
             </div>
         </div>
 
+        <div class="request_change_modal" :class="{openModal:openModal}">
+
+        </div>
+
+
         <ion-header class="header" no-border collapse="fade">
+            
             <ion-toolbar class="main-header">
                 <ion-buttons slot="end">
                     <ion-avatar @click="$router.push('/employee/profile')">
@@ -30,8 +39,9 @@
             </ion-toolbar>
         </ion-header>
         <ion-content fullscreen="true">
-            
-
+            <ion-refresher style="position:relative; z-index:999;" slot="fixed" @ionRefresh="handleRefresh($event)">
+                <ion-refresher-content refreshing-spinner="crescent"></ion-refresher-content>
+            </ion-refresher>
             <ion-list class="ion-margin-top" v-for="st in schedulesToday" :key="st.id">
                 <ion-item button lines="none" @click="openActionSheet(st.id)" :style="'border-left: 6px solid '+st.color">
                     <ion-label>
@@ -39,6 +49,7 @@
                         <p>Start Time: {{dateFormat('%h:%i%a',selectedDate+' '+st.shift_start)}}</p>
                         <p>End Time: {{dateFormat('%h:%i%a',selectedDate+' '+st.shift_end)}}</p>
                         <p>Date: {{dateFormat('%lm %d, %y',selectedDate)}}</p>
+                        <div class="designation_chips_cont"><div class="designation_chips" v-for="s,i in st.designations" :key="i">{{s.position}}</div></div>
                     </ion-label>
                 </ion-item>
             </ion-list>
@@ -49,13 +60,13 @@
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, actionSheetController, IonTitle, IonButtons } from '@ionic/vue';
+import { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, actionSheetController, IonTitle, IonButtons, IonRefresher, IonRefresherContent } from '@ionic/vue';
 import { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, menu } from 'ionicons/icons';
 import { axios, lStore,dateFormat, openToast } from '@/functions';
 
 export default defineComponent({
     name: 'SchedulesView',
-    components: { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, IonTitle, IonButtons },
+    components: { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, IonTitle, IonButtons, IonRefresher, IonRefresherContent },
     setup() {
         const logScrolling2 = (e) => {
             if (e.detail.scrollTop >= 50) {
@@ -82,7 +93,8 @@ export default defineComponent({
             getMonthToday: '',
             isOpen: false,
             openModal: false,
-            openedSchedule:{}
+            openedSchedule:{},
+            allowedRoles:[]
         }
     },
     created() {
@@ -96,23 +108,32 @@ export default defineComponent({
         let date = new Date().toLocaleDateString();
         date = date.split('/')[2]+'-'+date.split('/')[0]+'-'+date.split('/')[1];
         this.selectedDate = date;
+
+        this.allowedRoles = [];
+
+        axios.post(`userDesignations?_batch=true&user_id=${lStore.get('user_id')}`).then(res=>{
+            if(res.data.result == null) return;
+            this.allowedRoles = res.data.result;
+        });
+
         axios.post(`assigned/joint?range=${date}&_batch=true&exclude_timerecord`).then(res=>{
             if(res.data.result == null) {
                 this.schedulesToday = [];
                 return;
             }
-            this.schedulesToday = res.data.result;
-            
-            // this.takenSchedulesToday = [];
-            // this.schedulesToday.forEach(el=>{
-            //     axios.post('assigned?user_id='+lStore.get('user_id')+'&schedule_id='+el.id,null,null).then(res=>{
-            //         if(res.data.result == null) return;
-            //         this.takenSchedulesToday.push(el.id);
-            //     })
-            // })
-
-            // this.takenSchedulesToday = this.schedulesToday.filter(el=>this.takenSchedulesToday.includes(el.id));
-            // console.log(this.takenSchedulesToday);
+            this.schedulesToday = [];
+            res.data.result.forEach(el=>{
+                let filteredDesignations = [];
+                this.allowedRoles.forEach(el2=>{
+                    el.designations.forEach(el3=>{
+                        if(el3.designation_id != el2.designation_id) return;
+                        if(el2.branch_id != el.branch_id) return;
+                        filteredDesignations.push(el3);
+                    });
+                });
+                console.log(filteredDesignations);
+                if(filteredDesignations.length > 0) this.schedulesToday.push(el);
+            });
         })
     },
     methods: {
@@ -162,8 +183,6 @@ export default defineComponent({
                 if(res.data == null) return;
                 if(res.data.action == 'cancel') return;
                 if(res.data.action == 'apply') {
-                    
-
                     let schedEnd = new Date(selectedSched.shift_date+' '+selectedSched.shift_end).getTime();
                     let curDateTime = new Date().getTime();
                     if(curDateTime >= schedEnd) {
@@ -172,7 +191,8 @@ export default defineComponent({
                     }
                     axios.post('assigned/create',null,{
                         user_id: lStore.get('user_id'),
-                        schedule_id: id
+                        schedule_id: id,
+                        status: 3
                     }).then(()=>{
                         window.location.reload();
                     })
@@ -191,15 +211,35 @@ export default defineComponent({
             if(sched.assignedEmps != null) emp = sched.assignedEmps.filter(el=>el.user_id == lStore.get('user_id'))
             return emp.length > 0
         },
+        handleRefresh(e){
+            this.setDate(this.selectedDate);
+            e.target.complete();
+        },
         setDate(e){
-            let date = e.target.value.match(/^[0-9]+-[0-9]+-[0-9]+/)[0];
-            this.selectedDate = date;
+            let date = e;
+            if(e.target != null){
+                date = e.target.value.match(/^[0-9]+-[0-9]+-[0-9]+/)[0];
+                this.selectedDate = date;
+            }
+            
             axios.post(`assigned/joint?range=${date}&_batch=true&exclude_timerecord`).then(res=>{
                 if(res.data.result == null) {
                     this.schedulesToday = [];
                     return;
                 }
-                this.schedulesToday = res.data.result;
+                this.schedulesToday = [];
+                res.data.result.forEach(el=>{
+                    let filteredDesignations = [];
+                    this.allowedRoles.forEach(el2=>{
+                        el.designations.forEach(el3=>{
+                            if(el3.designation_id != el2.designation_id) return;
+                            if(el2.branch_id != el.branch_id) return;
+                            filteredDesignations.push(el3);
+                        });
+                    });
+                    console.log(filteredDesignations);
+                    if(filteredDesignations.length > 0) this.schedulesToday.push(el);
+                });
             })
         }
     }
@@ -384,7 +424,7 @@ ion-select {
     border-left: 6px solid #f44;
 }
 
-.Timesheets_modal{
+.Schedule_modal{
     z-index: -1;
     position: fixed;
     top: 0;
@@ -400,12 +440,12 @@ ion-select {
     align-items:center;
 }
 
-.Timesheets_modal.openModal{
+.Schedule_modal.openModal{
     z-index: 999;
     opacity:1;
 }
 
-.Timesheets_modal_box{
+.Schedule_modal_box{
     background: #fff;
     color: #000;
     padding: 10px;
@@ -417,19 +457,19 @@ ion-select {
     overflow: hidden;
 }
 
-.Timesheets_modal.openModal .Timesheets_modal_box{
+.Schedule_modal.openModal .Schedule_modal_box{
     transform: translateY(0%);
     width: calc(100% - 40px);
 }
 
-.Timesheets_modal_box h2{
+.Schedule_modal_box h2{
     margin: 0;
     font-size: 20px;
     border-bottom: 1px solid #eee;
     padding: 10px 0;
 }
 
-.Timesheets_modal_box .grid{
+.Schedule_modal_box .grid{
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -437,7 +477,7 @@ ion-select {
     margin: 20px 0;
 }
 
-.Timesheets_modal_box .grid > p{
+.Schedule_modal_box .grid > p{
     font-weight: normal;
     width:30%;
     color: #555;
@@ -448,11 +488,11 @@ ion-select {
 
 
 
-.Timesheets_modal_box .grid > div{
+.Schedule_modal_box .grid > div{
     width:63%;
 }
 
-.Timesheets_modal_box .grid > div:nth-child(2n) > span{
+.Schedule_modal_box .grid > div:nth-child(2n) > span{
     background: #edf8ff;
     border-bottom: 1px solid #c0e7ff;
     padding: 7px;
@@ -463,4 +503,24 @@ ion-select {
     display: block;
     border-radius: 10px;
 }
+
+.notBranchMatch{
+    background: #ffbcbc;
+    padding: 5px;
+    margin: 5px 0;
+    display: inline-block;
+}
+
+.designation_chips_cont{margin-top: 10px;}
+
+.designation_chips{
+    background: #1f94db;
+    color: #fff;
+    padding: 5px 7px;
+    border-radius: 20px;
+    margin: 0 5px;
+    font-size: 15px;
+    display: inline-block;
+}
+.designation_chips:first-child{margin-left: 0;}
 </style>
