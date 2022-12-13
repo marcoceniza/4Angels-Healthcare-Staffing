@@ -100,7 +100,10 @@ class AxiosR{
     }
 }
 
-export const axios = new AxiosR('https://www.4angelshc.com/mobile/',{PWAuth:lStore.get('user_token')});
+export const axios = new AxiosR('http://localhost/rentarepair/api/',{
+    PWAuth: 'test_token_1',
+    PWAuthUser: 10000160
+});
 
  
 
