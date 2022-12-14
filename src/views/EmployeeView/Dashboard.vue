@@ -33,16 +33,15 @@
                     </ion-avatar>
                 </ion-buttons>
             </ion-toolbar>
+            <ion-toolbar>
+                <ion-text class="ion-padding-start ion-margin-top" color="primary">{{ user.firstname }} {{ user.lastname }}</ion-text>
+                <p class="ion-padding-start">{{ getMonthToday }} {{ new Date().getDate() }}, {{ new Date().getFullYear() }}</p>
+            </ion-toolbar>
         </ion-header>
         <ion-content fullscreen="true" id="main-content" scroll-events="true" @ionScroll="logScrolling($event)">
             <ion-refresher style="position:relative; z-index:999;" slot="fixed" @ionRefresh="handleRefresh($event)">
                 <ion-refresher-content refreshing-spinner="crescent"></ion-refresher-content>
             </ion-refresher>
-
-            <div class="hdr_txt">
-                <ion-text class="ion-padding-start ion-margin-top" color="primary">{{ user.firstname }} {{ user.lastname }}</ion-text>
-                <p class="ion-padding-start">{{ getMonthToday }} {{ new Date().getDate() }}, {{ new Date().getFullYear() }}</p>
-            </div>
 
             <div class="stopwatch ion-margin-top">
                 <p>HOURS <span>{{ hours }}</span></p>
@@ -148,14 +147,14 @@
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, menuController, actionSheetController, IonButtons, IonMenu, IonMenuButton, IonSegment, IonSegmentButton, IonRefresher, IonRefresherContent } from '@ionic/vue';
+import { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, menuController, actionSheetController, IonButtons, IonMenu, IonMenuButton, IonSegment, IonSegmentButton, IonRefresher, IonRefresherContent, IonIcon, IonRouterOutlet, IonTitle, IonLabel, IonItem, IonList, IonAvatar, IonCol, IonRow, IonGrid, IonText } from '@ionic/vue';
 import { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, menu, reader, checkmarkCircle, location, time, calendar, calendarClear, navigate, person } from 'ionicons/icons';
 import { lStore, axios, formatDateString,dateFormat, openToast } from '@/functions';
 import { Geolocation } from '@capacitor/geolocation';
 
 export default defineComponent({
     name: 'DashboardView',
-    components: { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonButtons, IonMenu, IonMenuButton, IonSegment, IonSegmentButton, IonRefresher, IonRefresherContent },
+    components: { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonButtons, IonMenu, IonMenuButton, IonSegment, IonSegmentButton, IonRefresher, IonRefresherContent, IonIcon, IonRouterOutlet, IonTitle, IonLabel, IonItem, IonList, IonAvatar, IonCol, IonRow, IonGrid, IonText },
     setup() {
         const logScrolling = (e) => {
             if (e.detail.scrollTop >= 20) {
@@ -164,15 +163,7 @@ export default defineComponent({
                 document.querySelector('.ion-head').classList.remove('ion-head-style');
             }
         }
-
-        const handleRefresh = (event) => {
-            setTimeout(() => {
-                window.location.reload();
-                event.target.complete();
-            }, 2000);
-        };
-
-        return { handleRefresh, apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, menu, warning, logScrolling, reader, checkmarkCircle, location, time, calendar, calendarClear, navigate, person };
+        return { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, menu, warning, logScrolling, reader, checkmarkCircle, location, time, calendar, calendarClear, navigate, person, IonRefresher, IonRefresherContent };
     },
     data() {
         return{
@@ -205,6 +196,7 @@ export default defineComponent({
         const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
         let day = days[new Date().getDay()].toUpperCase();
         this.getDayToday = day;
+        
 
         const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
         let month = months[new Date().getMonth()].toUpperCase();
@@ -232,6 +224,12 @@ export default defineComponent({
     },
     methods: {
         dateFormat,
+        handleRefresh(event){
+            this.fetchScheds();
+            setTimeout(() => {
+                event.target.complete();
+            }, 2000);
+        },
         clear(){
             this.message = null;
             this.clockIn = '';
@@ -297,7 +295,6 @@ export default defineComponent({
                 location_lat:coordinates.coords.latitude,
                 location_long:coordinates.coords.longitude,
             }).then(res=>{
-                console.log(res.data);
                 lStore.set('timerecord_timein',res.data.result);
             })
         },
@@ -381,6 +378,7 @@ export default defineComponent({
             let resp = await axios.post(`assigned/joint?range=${currentDateString},${weekDateString}&_batch=true&user_id=${lStore.get('user_id')}`);
             if(resp.data == null || !resp.data.success) return;
             let updatedAssignedResults = [];
+            let unfinishedTimerecords = [];
             let timerecordIds = {};
             let resp2 = await axios.post(`timerecord?_select=id,time_in,time_out,schedule_id&_batch=true&user_id=${lStore.get('user_id')}&_LSE_time_in=${weekDateString}&_orderby=time__in_ASC&_limit=10`);
             if(resp2.data != null && resp2.data.success) {
@@ -394,12 +392,6 @@ export default defineComponent({
                         unfinishedTimerecords.push(t);
             }
 
-            let unfinishedTimerecords = [];
-
-            
-            
-            console.log(resp.data.result,'test');
-
             resp.data.result.forEach(el=>{
                 let elementDateTime = new Date(el.shift_date+' '+el.shift_end);
                 let elementDateTime2 = new Date(el.shift_date+' '+el.shift_start);
@@ -412,7 +404,7 @@ export default defineComponent({
                 
 
                 if(elementDateTime > currentDateTime){
-                    console.log(timerecordIds[el.id],el.id);
+                    
                     if(timerecordIds[el.id] != null){
                         if(timerecordIds[el.id].time_out == null) updatedAssignedResults.push(el);
                     }else{
@@ -422,7 +414,6 @@ export default defineComponent({
                 }
             });
 
-            console.log(unfinishedTimerecords);
             let finishedPendingTimerecord = false;
 
             unfinishedTimerecords.forEach(async (el)=>{
@@ -440,7 +431,6 @@ export default defineComponent({
                 mobile_branches.location,
                 mobile_branches.name&id=${el}&_joins=mobile_branches&_on=mobile_schedule.branch_id=mobile_branches.id`);
                 if(resp3.data == null || !resp3.data.success) return;
-                console.log(resp3.data);
                 updatedAssignedResults = [resp3.data.result,...updatedAssignedResults];
                 if(new Date(updatedAssignedResults[0].shift_date) <= new Date(currentDateString) && (this.nextSched == null || !finishedPendingTimerecord)) this.nextSched = updatedAssignedResults[0];
                 finishedPendingTimerecord = true;
@@ -448,9 +438,9 @@ export default defineComponent({
                 this.clockIn = new Date(timerecordIds[el].time_in).toLocaleTimeString();
                 
             });
-            console.log(updatedAssignedResults[0].shift_date,currentDateString);
 
-            if(new Date(updatedAssignedResults[0].shift_date) <= new Date(currentDateString)) this.nextSched = updatedAssignedResults[0];
+            if(updatedAssignedResults.length > 0) 
+                if(new Date(updatedAssignedResults[0].shift_date) <= new Date(currentDateString)) this.nextSched = updatedAssignedResults[0];
             this.upcoming = updatedAssignedResults;
 
 
@@ -579,23 +569,6 @@ ion-card-header {
 
 ion-header {
     box-shadow: none;
-}
-
-.hdr_txt {
-    margin-bottom: 35px;
-    margin-top: 6px;
-}
-
-.hdr_txt p {
-    margin: 10px 0 0;
-    font-size: 12px;
-    color: #888;
-    padding: 0;
-}
-
-.hdr_txt ion-text {
-    margin: 0;
-    padding: 0;
 }
 
 ion-header::after {

@@ -100,7 +100,10 @@ class AxiosR{
     }
 }
 
-export const axios = new AxiosR('https://www.4angelshc.com/mobile/',{PWAuth:lStore.get('user_token')});
+export const axios = new AxiosR('https://4angelshc.com/mobile/',{
+    PWAuth: 'test_token_1',
+    PWAuthUser: 10000160
+});
 
  
 
@@ -395,45 +398,6 @@ function toRad(Value){
 }
 // END OF COMP FUNCTIONS FOR calcFlyDist
 
-// upload image mobile
-
-export class ImageDataConverter {
-    constructor(dataURI) {
-        this.dataURI = dataURI;
-    }
-  
-    getByteString() {
-      let byteString;
-      if (this.dataURI.split(',')[0].indexOf('base64') >= 0) {
-        byteString = atob(this.dataURI.split(',')[1]);
-      } else {
-        byteString = decodeURI(this.dataURI.split(',')[1]);
-      }
-      return byteString;
-    }
-  
-    getMimeString() {
-      return this.dataURI.split(',')[0].split(':')[1].split(';')[0];
-    }
-  
-    convertToTypedArray() {
-      let byteString = this.getByteString();
-      let ia = new Uint8Array(byteString.length);
-      for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-      }
-      return ia;
-    }
-  
-    dataURItoBlob() {
-      let mimeString = this.getMimeString();
-      let intArray = this.convertToTypedArray();
-      return new Blob([intArray], {type: mimeString});
-    }
-}
-
-// end upload image mobile
-
 export class QueryBuilder{
     constructor(endpoint){
         this.endpoint = endpoint;
@@ -530,3 +494,38 @@ export class QueryBuilder{
         return this;
         }
 }
+
+export class ImageDataConverter {
+    constructor(dataURI) {
+        this.dataURI = dataURI;
+    }
+  
+    getByteString() {
+      let byteString;
+      if (this.dataURI.split(',')[0].indexOf('base64') >= 0) {
+        byteString = atob(this.dataURI.split(',')[1]);
+      } else {
+        byteString = decodeURI(this.dataURI.split(',')[1]);
+      }
+      return byteString;
+    }
+  
+    getMimeString() {
+      return this.dataURI.split(',')[0].split(':')[1].split(';')[0];
+    }
+  
+    convertToTypedArray() {
+      let byteString = this.getByteString();
+      let ia = new Uint8Array(byteString.length);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      return ia;
+    }
+  
+    dataURItoBlob() {
+      let mimeString = this.getMimeString();
+      let intArray = this.convertToTypedArray();
+      return new Blob([intArray], {type: mimeString});
+    }
+  }

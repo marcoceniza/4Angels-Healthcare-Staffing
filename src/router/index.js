@@ -5,12 +5,6 @@ import WelcomePage from '@/views/WelcomePage.vue';
 import SplashScreenView from '@/views/SplashScreenView/SplashScreenView.vue';
 import LoginPage from '@/views/LoginView/LoginPage.vue';
 
-import SupervisorTabs from '@/views/SupervisorView/SupervisorTabs.vue';
-import SupervisorDashboard from '@/views/SupervisorView/Dashboard.vue';
-import EmployeeSchedules from '@/views/SupervisorView/EmployeeSchedules.vue';
-import EmployeeList from '@/views/SupervisorView/EmployeeList.vue';
-import SupervisorProfile from '@/views/SupervisorView/Profile.vue';
-
 import EmployeeTabs from '@/views/EmployeeView/EmployeeTabs.vue';
 import DashboardView from '@/views/EmployeeView/Dashboard.vue';
 import SchedulesView from '@/views/EmployeeView/Schedules.vue';
@@ -27,7 +21,7 @@ const routes = [
     name: 'SplashScreenView',
     component: SplashScreenView,
     beforeEnter: (to, from) => {
-      if (from.path === '/welcome'||from.path === '/employee' || from.path === '/supervisor' || from.path === '/employee/dashboard'|| from.path === '/supervisor/dashboard'){return false;}
+      if (from.path === '/welcome' || from.path === '/employee' || from.path === '/employee/dashboard'){return false;}
     }
   },
   {
@@ -39,36 +33,6 @@ const routes = [
     }
   },
   {path: '/login', name: 'LoginPage', component: LoginPage},
-  {
-    path: '/supervisor',
-    component: SupervisorTabs,
-    children: [
-      {
-        path: '/supervisor',
-        redirect: '/supervisor/dashboard',
-      },
-      {
-        path: '/supervisor/dashboard',
-        component: SupervisorDashboard,
-      },
-      {
-        path: '/supervisor/profile',
-        component: SupervisorProfile,
-      },
-      {
-        path: "/supervisor/employeeschedules",
-        component: EmployeeSchedules
-      },
-      {
-        path: "/supervisor/employeelist",
-        component: EmployeeList
-      },
-    ],
-    beforeEnter: () => {
-      if (!lStore.isset('user_token')) return '/login';
-      if (lStore.get('user_info').role != 'Supervisor') router.back();
-    },
-  },
   {
     path: '/employee',
     component: EmployeeTabs,

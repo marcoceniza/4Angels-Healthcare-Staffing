@@ -25,7 +25,7 @@
 import { defineComponent } from 'vue';
 import { Autoplay, Keyboard, Pagination, Scrollbar, Zoom } from 'swiper';
 import { Swiper, SwiperSlide } from 'swiper/vue';
-import { IonContent, IonPage, IonicSlides, IonButton } from '@ionic/vue';
+import { IonContent, IonPage, IonicSlides, IonButton, IonText } from '@ionic/vue';
 import 'swiper/css';
 import 'swiper/css/autoplay';
 import 'swiper/css/keyboard';
@@ -36,7 +36,7 @@ import '@ionic/vue/css/ionic-swiper.css';
 
 export default defineComponent({
   name: 'WelcomePage',
-  components: { Swiper, SwiperSlide, IonContent, IonPage, IonButton },
+  components: { Swiper, SwiperSlide, IonContent, IonPage, IonButton, IonText },
   setup() {
     return {
       modules: [Autoplay, Keyboard, Pagination, Scrollbar, Zoom, IonicSlides],

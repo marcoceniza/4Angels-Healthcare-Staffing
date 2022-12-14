@@ -4,24 +4,22 @@
             <ion-buttons @click="setOpen(true)" class="create-icon2">
                 <ion-icon :icon="cloudUpload" slot="start"></ion-icon>
             </ion-buttons>
-            <ion-buttons @click="setOpen2(true)" class="create-icon">
+            <ion-buttons class="create-icon" @click="setOpen2(true)">
                 <ion-icon :icon="create" slot="end"></ion-icon>
             </ion-buttons>
             <ion-header>Profile</ion-header>
+            <ion-avatar>
+                <img :src="user.profile_img"/>
+                <ion-buttons class="camera-icon">
+                    <ion-icon :icon="camera" @click="setProfileImg"></ion-icon>
+                </ion-buttons>
+            </ion-avatar>
+            <h2 class="title_name">{{ user.firstname }} {{ user.lastname }}<span>{{ user.role }}</span></h2>
         </ion-toolbar>
         <ion-content fullscreen="true">
             <ion-refresher style="position:relative; z-index:999;" slot="fixed" @ionRefresh="handleRefresh($event)">
                 <ion-refresher-content refreshing-spinner="crescent"></ion-refresher-content>
             </ion-refresher>
-
-            <ion-avatar>
-                <img :src="user.profile_img"/>
-                <ion-buttons class="camera-icon">
-                    <ion-icon color="primary" :icon="camera" @click="setProfileImg"></ion-icon>
-                </ion-buttons>
-            </ion-avatar>
-            <h2 class="title_name">{{ user.firstname }} {{ user.lastname }}<span>{{ user.role }}</span></h2>
-
             <ion-list class="ion-margin-top">
                 <ion-item lines="full">
                     <ion-icon :icon="mail" slot="start" color="primary"></ion-icon>
@@ -51,6 +49,23 @@
                     </ion-toolbar>
                 </ion-header>
                 <ion-content class="ion-padding">
+                    <!-- <ion-grid>
+                        <ion-row>
+                            <ion-col>
+                                <label for="uploadFile">
+                                <ion-icon class="close_icon" color="dark" @click="setOpen(false)" :icon="closeCircle"></ion-icon>
+                                <ion-card button="true">
+                                    <img class="ion-padding" src="@/images/upload.svg"/>
+                                    <ion-card-header>   
+                                        <ion-card-subtitle>Attach FILE Here</ion-card-subtitle>
+                                        <ion-card-title>Browse</ion-card-title>
+                                    </ion-card-header>
+                                </ion-card>
+                                </label>
+                                <input id="uploadFile" type="file" hidden>
+                            </ion-col>
+                        </ion-row>
+                    </ion-grid> -->
                     <div class="file_vwr_ctrl">
                         <button class="bulkSelect"  :class="{active:bulkSelect}" @click="bulkSelect = !bulkSelect;chosenFile=[]">Bulk Select: {{bulkSelect ? 'On': 'Off'}}</button>
                         <button class="delete" @click="deleteSelected" v-if="chosenFile.length>0">Delete</button> 
@@ -106,10 +121,6 @@
                             <ion-input v-model="user.lastname"></ion-input>
                         </ion-item>
                         <ion-item>
-                            <ion-label position="stacked">Position</ion-label>
-                            <ion-input v-model="user.role"></ion-input>
-                        </ion-item>
-                        <ion-item>
                             <ion-label position="stacked">Email</ion-label>
                             <ion-input v-model="user.email_address"></ion-input>
                         </ion-item>
@@ -130,37 +141,32 @@
 <script>
 import { defineComponent } from 'vue';
 import axiosA from 'axios';
-import { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, actionSheetController, loadingController, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal, IonInput, IonRefresher, IonRefresherContent } from '@ionic/vue';
-import { mail, call, location, create, home, camera, cloudUpload, closeCircle } from 'ionicons/icons';
-import { Camera, CameraResultType } from '@capacitor/camera';
-import { lStore, axios, ImageDataConverter} from '@/functions';
+import { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, actionSheetController, loadingController, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal, IonInput,IonRefresher, IonRefresherContent, IonButton, IonTitle } from '@ionic/vue';
+import { mail, call, location, create, camera, cloudUpload } from 'ionicons/icons';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { lStore, axios, ImageDataConverter, openToast} from '@/functions';
 import router from '@/router';
+import { defineCustomElements } from '@ionic/pwa-elements/loader';
+defineCustomElements(window);
 
 export default defineComponent({
     name: 'EmployeeProfile',
-    components: { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal, IonInput, IonRefresher, IonRefresherContent },
+    components: { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal, IonInput,IonRefresher, IonRefresherContent, IonButton, IonTitle  },
     setup() {
-        const handleRefresh = (event) => {
-            setTimeout(() => {
-                window.location.reload();
-                event.target.complete();
-            }, 2000);
-        };
-
-        return { handleRefresh, mail, call, location, create, home, camera, cloudUpload, closeCircle };
+        return { mail, call, location, create, camera, cloudUpload };
     },
     data() {
         return {
             user: {},
             isOpen: false,
-            isOpen2: false,
             cifile: 'https://www.4angelshc.com/mobile/filesystem/',
             path:'',
             relativePath:'',
             files:[],
             chosenFile:[],
             bulkSelect:false,
-            uploading:{}
+            uploading:{},
+            isOpen2: false
         }
     },
     created() {
@@ -172,8 +178,15 @@ export default defineComponent({
         axios.post('files?path='+this.relativePath).then(res=>{
             this.files = res.data;
         });
+        
     },
     methods: {
+        handleRefresh(event){
+            setTimeout(() => {
+                event.target.complete();
+                window.location.reload();
+            }, 2000);
+        },
         setOpen(isOpen) {
             this.isOpen = isOpen;
         },
@@ -181,12 +194,10 @@ export default defineComponent({
             this.isOpen2 = isOpen2;
         },
         updateProfile() {
-            axios.post('users/update?id='+lStore.get('user_id'),null, this.user, {
-                
-            }).then(res => {
-                if(!res.data.result) return;
-
-                
+            axios.post('users/update?id='+lStore.get('user_id'),null, this.user).then(res => {
+                if(!res.data.success) return;
+                openToast('Profile Information Updated!', 'success');
+                lStore.set('user_info',this.user);
             });
         },
         fileType(filename){
@@ -303,6 +314,7 @@ export default defineComponent({
             const image = await Camera.getPhoto({
                 quality: 90,
                 allowEditing: true,
+                source: CameraSource.Camera,
                 resultType: CameraResultType.DataUrl
             });
 
@@ -311,16 +323,56 @@ export default defineComponent({
             let form = new FormData();
             form.append('file',blob,'file.'+blobObj.getMimeString().replace(/\w+\//g,''));
 
-            axiosA({
-                method:'post',
-                url: 'https://4angelshc.com/mobile/users/update?id='+lStore.get('user_id'),
-                data : form
-            }).then(()=>{
-                let userFromLStore = lStore.get('user_info')
-                userFromLStore.profile_img = image.dataUrl;
-                lStore.set('user_info', userFromLStore);
-                window.location.reload();
+            let action = await actionSheetController.create({
+                header: 'Confirm Profile Image?',
+                buttons: [
+                    {
+                        text: 'Confirm Profile',
+                        data: {
+                            action: 'confirm',
+                        },
+                    },
+                    {
+                        text: 'Choose Another',
+                        data: {
+                            action: 'redo',
+                        },
+                    },
+                    {
+                        text: 'Cancel',
+                        role: 'cancel',
+                        data: {
+                            action: 'cancel',
+                        },
+                    }
+                ]
             })
+
+            await action.present();
+
+            action.onDidDismiss().then(res=>{
+                if(res.data == null) return;
+                if(res.data.action == 'cancel') return;
+                if(res.data.action == 'redo') {
+                    this.setProfileImg();
+                    return;
+                }
+                if(res.data.action == 'confirm') {
+                    axiosA({
+                        method:'post',
+                        url: 'https://4angelshc.com/mobile/users/update?id='+lStore.get('user_id'),
+                        data : form
+                    }).then(()=>{
+                        let userFromLStore = lStore.get('user_info')
+                        userFromLStore.profile_img = image.dataUrl;
+                        lStore.set('user_info', userFromLStore);
+                        window.location.reload();
+                    })
+                }
+
+            });
+
+            
         }
     }
 });
@@ -336,6 +388,11 @@ export default defineComponent({
     font-size: 25px;
 }
 
+ion-card {
+    border: 2px dashed #b0b0b0;
+    padding: 20px;
+}
+
 ion-toolbar {
     min-height: 0;
 }
@@ -343,12 +400,6 @@ ion-toolbar {
 ion-title {
     font-size: 18px;
 }
-
-ion-card {
-    border: 2px dashed #b0b0b0;
-    padding: 20px;
-}
-
 ion-header {
     box-shadow: none; 
     text-align: center; 
@@ -369,7 +420,6 @@ ion-avatar img {
     height: 100%;
     padding: 3px;
     border: 5px solid #fff;
-    box-shadow: 0px 0px 12px #ccc;
 }
 
 ion-content {
@@ -391,7 +441,7 @@ ion-content h2 {
 .title_name span {
     display: block;
     font-size: 15px;
-    color: #828282;
+    color: #fff;
 }
 
 ion-list {
@@ -412,6 +462,7 @@ ion-row {
 
 .create-icon {
     position: absolute;
+    top: 34px;
     right: 12px;
     font-size: 25px;
     color: #fff;
@@ -420,6 +471,7 @@ ion-row {
 
 .create-icon2 {
     position: absolute;
+    top: 38px;
     left: 12px;
     font-size: 25px;
     color: #fff;
@@ -440,9 +492,7 @@ ion-toolbar {
 }
 
 .title-toolbar {
-    background: #1f94db; 
-    padding: 0;
-    min-height: 0;
+    background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(58,174,245,1) 30%, rgba(20,139,210,1) 65%); 
 }
 
 .file_vwr_ctrl{padding: 10px;}
@@ -468,6 +518,8 @@ ion-toolbar {
 .uploading .file_disp .fileicon{animation-name:uploading;animation-duration: 2s;animation-iteration-count: infinite;}
 .file_vwr_close{margin-top: 20px;padding: 10px;width: 100px;background: #bb4a36;border-radius: 5px;}
 .file_vwr_close:active{background: #7c3225;}
+ion-avatar img{aspect-ratio: 1/1;}
+
 
 @media only screen and (max-width:500px){
     .file_itm{width: 31%;}
