@@ -69,6 +69,8 @@
                 </ion-segment-button>
             </ion-segment>
             
+            <p class="noData" v-if="nextSched.id == null">NO DATA...</p>
+
             <ion-list class="ion-margin-top ion-margin-bottom" :class="{ today: todays }" v-if="nextSched.id != null">
                 <ion-item lines="full">
                     <ion-label color="primary">{{nextSched.title}}<small>{{(this.clockIn != null && this.clockIn != '') ? 'Ongoing' : 'Next'}} Schedule</small></ion-label>
@@ -401,8 +403,6 @@ export default defineComponent({
                     elementDateTime =  new Date(el.shift_date+' '+el.shift_end).getTime();
                 let currentDateTime = currentDate.getTime();
 
-                
-
                 if(elementDateTime > currentDateTime){
                     
                     if(timerecordIds[el.id] != null){
@@ -442,17 +442,14 @@ export default defineComponent({
             if(updatedAssignedResults.length > 0) 
                 if(new Date(updatedAssignedResults[0].shift_date) <= new Date(currentDateString)) this.nextSched = updatedAssignedResults[0];
             this.upcoming = updatedAssignedResults;
-
-
-            
-            
-
         }
     }
 });
 </script>
 
 <style scoped>
+
+.noData{text-align: center; color: #959595; font-weight: bold;}
 
 .disabled2,.disabled{pointer-events: none;}
 .today {display: none;}
@@ -461,7 +458,7 @@ export default defineComponent({
 ion-menu ion-content {
     background: #fff;
     --background: #fff;
-    --padding-top: 60px;
+    --padding-top: 20px;
     --padding-bottom: 60px;
     --padding-start: 0;
     --padding-end: 0;

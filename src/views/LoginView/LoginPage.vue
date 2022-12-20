@@ -28,9 +28,6 @@
                             <ion-checkbox slot="start"></ion-checkbox>
                             <ion-label>Remember Me</ion-label>
                         </ion-item>
-                        <ion-item>
-                            <ion-label><a @click="$router.push('/forgotpassword')">Forgot Password?</a></ion-label>
-                        </ion-item>
                     </div>
                 </div>
                 <ion-button expand="block" size="large" :disabled="formLoading" v-on:click="login">
@@ -267,6 +264,7 @@ ion-title {
     text-align: center;
     margin-top: 60px;
     font-size: 14px;
+    color: #555;
 }
 
 .form-container {
@@ -312,7 +310,7 @@ ion-title {
     flex-flow: row wrap;
     justify-content: space-between;
     align-items: center;
-    margin: 20px 0;
+    margin: 5px 0;
 }
 
 .form-input-footer ion-item {

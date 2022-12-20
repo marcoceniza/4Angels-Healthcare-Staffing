@@ -22,22 +22,25 @@
             </ion-refresher>
             <ion-list class="ion-margin-top">
                 <ion-item lines="full">
-                    <ion-icon :icon="mail" slot="start" color="primary"></ion-icon>
+                    <ion-icon :icon="mail" slot="start" color="medium"></ion-icon>
                     <ion-label>{{ user.email_address }}</ion-label>
                 </ion-item>
                 <ion-item lines="full">
-                    <ion-icon :icon="call" slot="start" color="primary"></ion-icon>
+                    <ion-icon :icon="call" slot="start" color="medium"></ion-icon>
                     <ion-label>{{ user.phonenumber }}</ion-label>
                 </ion-item>
                 <ion-item lines="full">
-                    <ion-icon :icon="location" slot="start" color="primary"></ion-icon>
+                    <ion-icon :icon="location" slot="start" color="medium"></ion-icon>
                     <ion-label>{{ user.address }}</ion-label>
                 </ion-item>
             </ion-list>
             <ion-grid>
                 <ion-row>
-                    <ion-col>
-                        <ion-button expand="block" color="dark" size="large" @click="presentActionSheet">Logout</ion-button>
+                    <ion-col size="6">
+                        <ion-button expand="block" color="primary" @click="$router.push('/employee/dashboard')">Home</ion-button>
+                    </ion-col>
+                    <ion-col size="6">
+                        <ion-button expand="block" color="dark" @click="presentActionSheet">Logout</ion-button>
                     </ion-col>
                 </ion-row>
             </ion-grid>
@@ -49,23 +52,6 @@
                     </ion-toolbar>
                 </ion-header>
                 <ion-content class="ion-padding">
-                    <!-- <ion-grid>
-                        <ion-row>
-                            <ion-col>
-                                <label for="uploadFile">
-                                <ion-icon class="close_icon" color="dark" @click="setOpen(false)" :icon="closeCircle"></ion-icon>
-                                <ion-card button="true">
-                                    <img class="ion-padding" src="@/images/upload.svg"/>
-                                    <ion-card-header>   
-                                        <ion-card-subtitle>Attach FILE Here</ion-card-subtitle>
-                                        <ion-card-title>Browse</ion-card-title>
-                                    </ion-card-header>
-                                </ion-card>
-                                </label>
-                                <input id="uploadFile" type="file" hidden>
-                            </ion-col>
-                        </ion-row>
-                    </ion-grid> -->
                     <div class="file_vwr_ctrl">
                         <button class="bulkSelect"  :class="{active:bulkSelect}" @click="bulkSelect = !bulkSelect;chosenFile=[]">Bulk Select: {{bulkSelect ? 'On': 'Off'}}</button>
                         <button class="delete" @click="deleteSelected" v-if="chosenFile.length>0">Delete</button> 
@@ -129,8 +115,16 @@
                             <ion-input v-model="user.address"></ion-input>
                         </ion-item>
                     </ion-list>
-                    <ion-button class="ion-margin-bottom" expand="block" color="primary" size="large" @click="setOpen2(false); updateProfile()">Update</ion-button>
-                    <ion-button expand="block" color="dark" size="large" @click="setOpen2(false)">Close</ion-button>
+                    <ion-grid>
+                        <ion-row>
+                            <ion-col size="6">
+                                <ion-button class="ion-margin-bottom" expand="block" color="primary" @click="setOpen2(false); updateProfile()">Update</ion-button>
+                            </ion-col>
+                            <ion-col size="6">
+                                <ion-button expand="block" color="dark" @click="setOpen2(false)">Close</ion-button>
+                            </ion-col>
+                        </ion-row>
+                    </ion-grid>
                 </ion-content>
             </ion-modal>
 
@@ -270,7 +264,6 @@ export default defineComponent({
             window.localStorage.clear();
             localStorage.clear();
             router.push('/login');
-            window.location.reload();
         },
         addToChosen(f){
             if(this.bulkSelect) {
@@ -366,7 +359,6 @@ export default defineComponent({
                         let userFromLStore = lStore.get('user_info')
                         userFromLStore.profile_img = image.dataUrl;
                         lStore.set('user_info', userFromLStore);
-                        window.location.reload();
                     })
                 }
 

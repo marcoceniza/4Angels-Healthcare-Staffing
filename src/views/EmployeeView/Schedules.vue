@@ -42,7 +42,13 @@
             <ion-refresher style="position:relative; z-index:999;" slot="fixed" @ionRefresh="handleRefresh($event)">
                 <ion-refresher-content refreshing-spinner="crescent"></ion-refresher-content>
             </ion-refresher>
+
+            <div class="noData" v-if="schedulesToday == ''">
+                <img src="@/images/noData.svg" alt="No Data">
+            </div>
+
             <ion-list class="ion-margin-top" v-for="st in schedulesToday" :key="st.id">
+                <p class="page-title">Schedules</p>
                 <ion-item button lines="none" @click="openActionSheet(st.id)" :style="'border-left: 6px solid '+st.color">
                     <ion-label>
                         <h1>{{st.title}}</h1>
@@ -246,6 +252,10 @@ export default defineComponent({
 </script>
 
 <style scoped>
+
+.page-title{text-align: center; font-weight: bold; font-size: 20px; margin: 0 0 12px;}
+
+.noData{width: 230px; max-width: 100%; margin: 30px auto 0;}
 
 ion-menu ion-content ion-item ion-label {
     margin: 0;

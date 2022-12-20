@@ -38,6 +38,10 @@
                 <ion-refresher-content refreshing-spinner="crescent"></ion-refresher-content>
             </ion-refresher>
 
+            <div class="noData" v-if="timesheets == ''">
+                <img src="@/images/noData.svg" alt="No Data">
+            </div>
+
             <ion-list class="ion-margin-top">
                 <ion-item v-for="test in timesheets" :key="test.user_id" @click="quedTimesheet = test;openModal=true">
                     <ion-label>
@@ -237,6 +241,9 @@ export default defineComponent({
 </script>
 
 <style scoped>
+
+.noData{width: 230px; max-width: 100%; margin: 30px auto 0;}
+
 ion-menu ion-content {
     background: #fff;
     --background: #fff;
