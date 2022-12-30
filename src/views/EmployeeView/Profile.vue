@@ -13,6 +13,7 @@
                 <ion-buttons class="camera-icon">
                     <ion-icon :icon="camera" @click="setProfileImg"></ion-icon>
                 </ion-buttons>
+                <ion-spinner v-if="loadImage" class="load-img" name="dots"></ion-spinner>
             </ion-avatar>
             <h2 class="title_name">{{ user.firstname }} {{ user.lastname }}<span>{{ user.role }}</span></h2>
         </ion-toolbar>
@@ -20,6 +21,7 @@
             <ion-refresher style="position:relative; z-index:999;" slot="fixed" @ionRefresh="handleRefresh($event)">
                 <ion-refresher-content refreshing-spinner="crescent"></ion-refresher-content>
             </ion-refresher>
+            
             <ion-list class="ion-margin-top">
                 <ion-item lines="full">
                     <ion-icon :icon="mail" slot="start" color="medium"></ion-icon>
@@ -135,7 +137,7 @@
 <script>
 import { defineComponent } from 'vue';
 import axiosA from 'axios';
-import { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, actionSheetController, loadingController, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal, IonInput,IonRefresher, IonRefresherContent, IonButton, IonTitle } from '@ionic/vue';
+import { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, actionSheetController, loadingController, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal, IonInput,IonRefresher, IonRefresherContent, IonButton, IonTitle, IonSpinner } from '@ionic/vue';
 import { mail, call, location, create, camera, cloudUpload } from 'ionicons/icons';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { lStore, axios, ImageDataConverter, openToast} from '@/functions';
@@ -145,7 +147,7 @@ defineCustomElements(window);
 
 export default defineComponent({
     name: 'EmployeeProfile',
-    components: { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal, IonInput,IonRefresher, IonRefresherContent, IonButton, IonTitle  },
+    components: { IonContent, IonPage, IonAvatar, IonItem, IonIcon, IonLabel, IonButtons, IonToolbar, IonList, IonCol, IonRow, IonGrid, IonHeader, IonModal, IonInput,IonRefresher, IonRefresherContent, IonButton, IonTitle, IonSpinner  },
     setup() {
         return { mail, call, location, create, camera, cloudUpload };
     },
@@ -160,7 +162,8 @@ export default defineComponent({
             chosenFile:[],
             bulkSelect:false,
             uploading:{},
-            isOpen2: false
+            isOpen2: false,
+            loadImage: false
         }
     },
     created() {
@@ -190,8 +193,11 @@ export default defineComponent({
         updateProfile() {
             axios.post('users/update?id='+lStore.get('user_id'),null, this.user).then(res => {
                 if(!res.data.success) return;
-                openToast('Profile Information Updated!', 'success');
-                lStore.set('user_info',this.user);
+                openToast('Profile Information Updated!', 'light');
+                setTimeout(() => {
+                    lStore.set('user_info',this.user);
+                    window.location.reload();
+                }, 2000)
             });
         },
         fileType(filename){
@@ -264,6 +270,7 @@ export default defineComponent({
             window.localStorage.clear();
             localStorage.clear();
             router.push('/login');
+            window.location.reload();
         },
         addToChosen(f){
             if(this.bulkSelect) {
@@ -307,7 +314,7 @@ export default defineComponent({
             const image = await Camera.getPhoto({
                 quality: 90,
                 allowEditing: true,
-                source: CameraSource.Camera,
+                source: CameraSource.Prompt,
                 resultType: CameraResultType.DataUrl
             });
 
@@ -356,9 +363,11 @@ export default defineComponent({
                         url: 'https://4angelshc.com/mobile/users/update?id='+lStore.get('user_id'),
                         data : form
                     }).then(()=>{
+                        this.loadImage = true;
                         let userFromLStore = lStore.get('user_info')
                         userFromLStore.profile_img = image.dataUrl;
                         lStore.set('user_info', userFromLStore);
+                        window.location.reload();
                     })
                 }
 
@@ -371,6 +380,8 @@ export default defineComponent({
 </script>
 
 <style scoped>
+
+.load-img{position: absolute; left: 0; right: 0; text-align: center; margin: 0 auto; top: 63px; color: #fff;}
 
 .close_icon {
     position: absolute;
@@ -399,7 +410,7 @@ ion-header {
 }
 
 ion-avatar {
-    width: 150px;
+    width: 120px;
     height: auto;
     position: relative;
     margin: 20px auto 0;
@@ -428,11 +439,13 @@ ion-content h2 {
 
 .title_name {
     text-align: center;
+    margin-top: 8px;
+    font-size: 20px;
 }
 
 .title_name span {
     display: block;
-    font-size: 15px;
+    font-size: 14px;
     color: #fff;
 }
 
@@ -473,7 +486,7 @@ ion-row {
 .camera-icon {
     position: absolute;
     bottom: 0;
-    font-size: 25px;
+    font-size: 20px;
     color: #fff;
     display: block;
     right: 0;

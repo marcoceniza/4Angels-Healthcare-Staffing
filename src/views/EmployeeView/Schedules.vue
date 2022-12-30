@@ -23,7 +23,6 @@
 
         </div>
 
-
         <ion-header class="header" no-border collapse="fade">
             
             <ion-toolbar class="main-header">
@@ -48,10 +47,9 @@
             </div>
 
             <ion-list class="ion-margin-top" v-for="st in schedulesToday" :key="st.id">
-                <p class="page-title">Schedules</p>
                 <ion-item button lines="none" @click="openActionSheet(st.id)" :style="'border-left: 6px solid '+st.color">
                     <ion-label>
-                        <h1>{{st.title}}</h1>
+                        <h2>{{st.title}}</h2>
                         <p>Start Time: {{dateFormat('%h:%i%a',selectedDate+' '+st.shift_start)}}</p>
                         <p>End Time: {{dateFormat('%h:%i%a',selectedDate+' '+st.shift_end)}}</p>
                         <p>Date: {{dateFormat('%lm %d, %y',selectedDate)}}</p>

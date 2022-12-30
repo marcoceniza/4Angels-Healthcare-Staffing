@@ -60,53 +60,58 @@
                 </ion-item>
             </ion-list>
 
-            <ion-segment class="segment-class" color="primary" @ionChange="scheduleData($event)">
-                <ion-segment-button value="todays-schedule">
+            <ion-segment value="todays-schedule" class="segment-class" color="primary">
+                <ion-segment-button @click="todaySchedule = true; upcomingSchedule = false" value="todays-schedule">
                     <ion-label>Today's Schedule</ion-label>
                 </ion-segment-button>
-                <ion-segment-button value="upcoming-schedule">
+                <ion-segment-button @click="upcomingSchedule = true; todaySchedule = false" value="upcoming-schedule">
                     <ion-label>Upcoming Schedule</ion-label>
                 </ion-segment-button>
             </ion-segment>
-            
-            <p class="noData" v-if="nextSched.id == null">NO DATA...</p>
 
-            <ion-list class="ion-margin-top ion-margin-bottom" :class="{ today: todays }" v-if="nextSched.id != null">
-                <ion-item lines="full">
-                    <ion-label color="primary">{{nextSched.title}}<small>{{(this.clockIn != null && this.clockIn != '') ? 'Ongoing' : 'Next'}} Schedule</small></ion-label>
-                    <ion-icon color="primary" :icon="reader" slot="end"></ion-icon>
-                </ion-item>
-                <ion-item lines="none">
-                    <ion-label>
-                        <p>Date: <span v-if="nextSched.shift_date == ''">-----</span> <span>{{dateFormat('%sm %d',nextSched.shift_date)}}</span></p>
-                    </ion-label>
-                    <ion-label>
-                        <p>Time Shift: <span v-if="nextSched.shift_start == '' && nextSched.shift_end == ''">-----</span> <span>{{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_start)}} - {{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_end)}}</span></p>
-                    </ion-label>
-                </ion-item>
-                <ion-item lines="none">
-                    <ion-label>
-                        <p>Location: <span v-if="nextSched.name == ''">-----</span> <span><strong>({{nextSched.name}} Branch)</strong> {{nextSched.location}}</span></p>
-                    </ion-label>
-                </ion-item>
-                <ion-item lines="none">
-                    <ion-label slot="end" class="approved">
-                        <ion-icon :icon="checkmarkCircle"></ion-icon> Schedule
-                    </ion-label>
-                </ion-item>
-            </ion-list>
+            <div v-if="todaySchedule">
+                <p class="noData" v-if="nextSched.id == null">No Today's Schedule...</p>
+                <ion-list class="ion-margin-top ion-margin-bottom" v-if="nextSched.id != null">
+                    <ion-item lines="full">
+                        <ion-label color="primary">{{nextSched.title}}<small>{{(this.clockIn != null && this.clockIn != '') ? 'Ongoing' : 'Next'}} Schedule</small></ion-label>
+                        <ion-icon color="primary" :icon="reader" slot="end"></ion-icon>
+                    </ion-item>
+                    <ion-item lines="none">
+                        <ion-label>
+                            <p>Date: <span>{{dateFormat('%sm %d, %y',nextSched.shift_date)}}</span></p>
+                        </ion-label>
+                        <ion-label>
+                            <p>Time Shift: <span>{{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_start)}} - {{dateFormat('%h:%i%a',nextSched.shift_date+' '+nextSched.shift_end)}}</span></p>
+                        </ion-label>
+                    </ion-item>
+                    <ion-item lines="none">
+                        <ion-label>
+                            <p>Location: <span><strong>({{nextSched.name}} Branch)</strong> {{nextSched.location}}</span></p>
+                        </ion-label>
+                    </ion-item>
+                    <ion-item lines="none">
+                        <ion-label slot="end" class="approved">
+                            <ion-icon :icon="checkmarkCircle"></ion-icon> Schedule
+                        </ion-label>
+                    </ion-item>
+                </ion-list>
+            </div>
 
-            <ion-list :class="{ upcoming: upcomings }">
-                <ion-item v-for="upSchedule in upcoming" :key="upSchedule.user_id">
-                    <ion-label>
-                        <h1>{{ upSchedule.title }}</h1>
-                        <p>{{ upSchedule.name }}</p>
-                        <p>{{ dateFormat('%sm %d',upSchedule.shift_date)}}</p>
-                        <p>{{ dateFormat('%h:%i%a',upSchedule.shift_date+' '+upSchedule.shift_start) }} - {{ dateFormat('%h:%i%a',upSchedule.shift_date+' '+upSchedule.shift_end) }}</p>
-                        <p></p>
-                    </ion-label>
-                </ion-item>
-            </ion-list>
+            <div v-if="upcomingSchedule">
+                <p class="noData" v-if="upcoming == ''">No Upcoming Schedule...</p>
+                <ion-list>
+                    <ion-item v-for="upSchedule in upcoming" :key="upSchedule.user_id">
+                        <ion-label>
+                            <h1>{{ upSchedule.title }}</h1>
+                            <p><strong>Location:</strong> {{ upSchedule.name }}</p>
+                            <p><strong>Date:</strong> {{ dateFormat('%sm %d, %y',upSchedule.shift_date)}}</p>
+                            <p><strong>Time:</strong> {{ dateFormat('%h:%i%a',upSchedule.shift_date+' '+upSchedule.shift_start) }} - {{ dateFormat('%h:%i%a',upSchedule.shift_date+' '+upSchedule.shift_end) }}</p>
+                        </ion-label>
+                    </ion-item>
+                </ion-list>
+            </div>
+
+            <div style="clear:both; overflow:hidden;"></div>
 
             <ion-grid class="title">
                 <ion-row class="ion-text-center">
@@ -182,8 +187,8 @@ export default defineComponent({
             hours: '',
             minutes: '',
             seconds: '',
-            todays: false,
-            upcomings: true,
+            todaySchedule: true,
+            upcomingSchedule: false,
             upcoming: [{}],
             nextSched:{},
             geotest:{long:0,lat:0},
@@ -198,9 +203,9 @@ export default defineComponent({
         const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
         let day = days[new Date().getDay()].toUpperCase();
         this.getDayToday = day;
-        
 
         const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+        
         let month = months[new Date().getMonth()].toUpperCase();
         this.getMonthToday = month;
 
@@ -213,8 +218,10 @@ export default defineComponent({
             this.seconds = ("00" + today.getSeconds()).slice(-2);
         }
 
-        setInterval(getDataTime, 1000);
-        
+        setInterval(() => {
+            getDataTime();
+        }, 1000);
+
         this.fetchScheds();
     },
     watch:{
@@ -251,17 +258,6 @@ export default defineComponent({
             this.upcoming= [];
             this.nextSched={};
         },
-        scheduleData(e) {
-            if(e.detail.value == 'todays-schedule') {
-                this.todays = false;
-                this.upcomings = true;
-            }
-
-            if(e.detail.value == 'upcoming-schedule') {
-                this.todays = true;
-                this.upcomings = false;
-            }
-        },
         async clockedIn(){
 
             if(this.nextSched.id == null) {
@@ -281,10 +277,10 @@ export default defineComponent({
             // ]);
 
             // if(dist > 0.2) {
-            //         openToast('You must be at least 200 meters closer to the location to time out!','warning');
-            //         console.log(dist);
-            //         return;
-            //     }
+            //     openToast('You must be at least 200 meters closer to the location to time out!','warning');
+            //     console.log(dist);
+            //     return;
+            // }
         
 
             this.clockIn = new Date().toLocaleTimeString();
@@ -449,6 +445,8 @@ export default defineComponent({
 
 <style scoped>
 
+.item.sc-ion-label-ios-h, .item .sc-ion-label-ios-h{white-space: unset;}
+
 .noData{text-align: center; color: #959595; font-weight: bold;}
 
 .disabled2,.disabled{pointer-events: none;}
@@ -465,6 +463,10 @@ ion-menu ion-content {
     --inner-padding-start: 0;
     --inner-padding-end: 0;
 }
+
+ion-label h1{color: #555;margin-bottom: 9px; border-left: 12px groove #1f94db; padding-left: 6px; text-transform: capitalize;font-size: 18px !important;}
+
+ion-item p strong{color: #999;}
 
 .ion-head-style {
     background: linear-gradient(to top, #fff, #6cbcf0);
@@ -756,6 +758,7 @@ ion-menu ion-item {
 
 .segment-class {
     margin-top: 25px;
+    margin-bottom: 20px;
 }
 
 

@@ -43,7 +43,7 @@
             </div>
 
             <ion-list class="ion-margin-top">
-                <ion-item v-for="test in timesheets" :key="test.user_id" @click="quedTimesheet = test;openModal=true">
+                <ion-item v-for="test in timesheets" :key="test.user_id" @click="quedTimesheet = test;openModal=true" button lines="none">
                     <ion-label>
                         <h2>{{ test.title }}</h2>
                         <p>Clock In: {{ dateFormat('%h:%i%a',test.time_in) }}</p>
@@ -378,6 +378,7 @@ ion-col h2 small {
 }
 
 ion-list ion-item {
+    border: 1px solid #ddd;
     border-left: 6px solid #999999;
     margin-bottom: 6px;
 }
