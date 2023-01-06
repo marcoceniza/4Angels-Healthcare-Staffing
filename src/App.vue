@@ -1,19 +1,21 @@
 <template>
-  <ion-app>
+  <ion-app class="ion-activatable ripple-parent rounded-rectangle custom-parent">
     <ion-router-outlet />
+    <ion-ripple-effect></ion-ripple-effect>
   </ion-app>
 </template>
 
 <script>
 import { defineComponent } from 'vue';
-import { IonApp, IonRouterOutlet, alertController } from '@ionic/vue';
+import { IonApp, IonRouterOutlet, alertController, IonRippleEffect } from '@ionic/vue';
 import { Network } from '@capacitor/network';
 
 export default defineComponent({
   name: 'App',
   components: {
     IonApp,
-    IonRouterOutlet
+    IonRouterOutlet,
+    IonRippleEffect
   },
   data(){
     return{
@@ -81,3 +83,9 @@ export default defineComponent({
   }
 });
 </script>
+
+<style>
+.custom-parent {
+  color: #1f94db
+}
+</style>

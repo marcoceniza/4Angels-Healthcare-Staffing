@@ -60,16 +60,16 @@
                 </ion-item>
             </ion-list>
 
-            <ion-segment value="todays-schedule" class="segment-class" color="primary">
-                <ion-segment-button @click="todaySchedule = true; upcomingSchedule = false" value="todays-schedule">
+            <ion-segment :value="segmentMode" class="segment-class" color="primary">
+                <ion-segment-button @click="segmentMode='todays-schedule'" value="todays-schedule">
                     <ion-label>Today's Schedule</ion-label>
                 </ion-segment-button>
-                <ion-segment-button @click="upcomingSchedule = true; todaySchedule = false" value="upcoming-schedule">
+                <ion-segment-button @click="segmentMode='upcoming-schedule'" value="upcoming-schedule">
                     <ion-label>Upcoming Schedule</ion-label>
                 </ion-segment-button>
             </ion-segment>
 
-            <div v-if="todaySchedule">
+            <div v-if="segmentMode == 'todays-schedule'">
                 <p class="noData" v-if="nextSched.id == null">No Today's Schedule...</p>
                 <ion-list class="ion-margin-top ion-margin-bottom" v-if="nextSched.id != null">
                     <ion-item lines="full">
@@ -97,7 +97,7 @@
                 </ion-list>
             </div>
 
-            <div v-if="upcomingSchedule">
+            <div v-if="segmentMode == 'upcoming-schedule'">
                 <p class="noData" v-if="upcoming == ''">No Upcoming Schedule...</p>
                 <ion-list>
                     <ion-item v-for="upSchedule in upcoming" :key="upSchedule.user_id">
@@ -192,7 +192,8 @@ export default defineComponent({
             upcoming: [{}],
             nextSched:{},
             geotest:{long:0,lat:0},
-            timesheets:[]
+            timesheets:[],
+            segmentMode: 'todays-schedule'
         }
     },
     created() {
@@ -213,7 +214,7 @@ export default defineComponent({
             let today = new Date();
 
             this.hours = ("00" + today.getHours()).slice(-2);
-            if(this.hours > 12) this.hours = today.getHours() % 12 || 12;
+            if(this.hours > 12 || this.hours < 1) this.hours = today.getHours() % 12 || 12;
             this.minutes = ("00" + today.getMinutes()).slice(-2); 
             this.seconds = ("00" + today.getSeconds()).slice(-2);
         }
