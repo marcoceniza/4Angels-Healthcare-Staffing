@@ -181,7 +181,7 @@ export default defineComponent({
             
             this.formLoading = true;
 
-            axios.post('users/login',null,{
+            axios.post('employee/login',null,{
                 login: this.loginInput,
                 password: this.password
             }).catch(err=>{
@@ -194,13 +194,13 @@ export default defineComponent({
                 this.formLoading = false;
                 
                 if(res.data.success) {
-                    lStore.set('user_id',res.data.result.id);
+                    lStore.set('user_id',res.data.result.employee_id);
                     lStore.set('user_token',res.data.token);
                     lStore.set('user_info', res.data.result);
-                    if(res.data.result.role != 'Employee'){
-                        openToast('For Employee login only!', 'danger');
-                        return;
-                    }
+                    // if(res.data.result.role != 'Employee'){
+                    //     openToast('For Employee login only!', 'danger');
+                    //     return;
+                    // }
                     openToast('Login Success', 'primary');
                     this.$router.replace('/employee/dashboard');
                 }

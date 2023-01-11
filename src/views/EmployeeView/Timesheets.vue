@@ -24,7 +24,7 @@
             <ion-toolbar class="main-header">
                 <ion-buttons slot="end">
                     <ion-avatar @click="$router.push('/employee/profile')">
-                        <img :src="user.profile_img"/>
+                        <img :src="user.employee_profilepicture"/>
                     </ion-avatar>
                 </ion-buttons>
                 <ion-title>Timesheets</ion-title>
@@ -62,10 +62,10 @@
                         <ion-card class="ion-text-center attend_profile">
                             <ion-card-header>
                                 <ion-avatar>
-                                    <img :src="user.profile_img"/>
+                                    <img :src="user.employee_profilepicture"/>
                                 </ion-avatar>
-                                <ion-card-title>{{ user.firstname }} {{ user.lastname }}</ion-card-title>
-                                <ion-card-subtitle>{{ user.role }}</ion-card-subtitle>
+                                <ion-card-title>{{ user.employee_firstname }} {{ user.employee_lastname }}</ion-card-title>
+                                <!-- <ion-card-subtitle>{{ user.role }}</ion-card-subtitle> -->
                             </ion-card-header>
                         </ion-card>
                     </ion-toolbar>
@@ -75,23 +75,23 @@
                         <ion-icon :icon="person" slot="start"></ion-icon>
                         <ion-label>
                             <h3>Name</h3>
-                            <p>{{ user.firstname }} {{ user.lastname }}</p>
+                            <p>{{ user.employee_firstname }} {{ user.employee_lastname }}</p>
                         </ion-label>
                     </ion-item>
-                    <ion-item lines="full">
+                    <!-- <ion-item lines="full">
                         <ion-icon :icon="briefcase" slot="start"></ion-icon>
                         <ion-label>
                             <h3>Position</h3>
                             <p>{{ user.role }}</p>
                         </ion-label>
-                    </ion-item>
-                    <ion-item lines="full">
+                    </ion-item> -->
+                    <!-- <ion-item lines="full">
                         <ion-icon :icon="map" slot="start"></ion-icon>
                         <ion-label>
                             <h3>Location</h3>
                             <p>{{ user.address }}</p>
                         </ion-label>
-                    </ion-item>
+                    </ion-item> -->
                     <ion-item lines="full">
                         <ion-icon :icon="time" slot="start"></ion-icon>
                         <ion-label>
@@ -116,12 +116,12 @@
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonHeader, IonToolbar, menuController, IonDatetime, IonModal, IonTitle, IonRefresher, IonRefresherContent, IonButton, IonAvatar, IonLabel, IonItem, IonList, IonIcon, IonButtons, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCard } from '@ionic/vue';
+import { IonContent, IonPage, IonHeader, IonToolbar, menuController, IonDatetime, IonModal, IonTitle, IonRefresher, IonRefresherContent, IonButton, IonAvatar, IonLabel, IonItem, IonList, IonIcon, IonButtons, IonCardTitle, IonCardHeader, IonCard } from '@ionic/vue';
 import { lStore, axios, dateFormat, formatDateString } from '@/functions';
 
 export default defineComponent({
     name: 'TmesheetsView',
-    components: { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, IonModal, IonTitle, IonRefresher, IonRefresherContent, IonButton, IonAvatar, IonLabel, IonItem, IonList, IonIcon, IonButtons, IonCardTitle, IonCardSubtitle, IonCardHeader, IonCard },
+    components: { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, IonModal, IonTitle, IonRefresher, IonRefresherContent, IonButton, IonAvatar, IonLabel, IonItem, IonList, IonIcon, IonButtons, IonCardTitle, IonCardHeader, IonCard },
     setup() {
         const logScrolling3 = (e) => {
             if (e.detail.scrollTop >= 50) {
@@ -352,10 +352,10 @@ ion-card img {
     margin: auto;
 }
 
-ion-card-subtitle {
+/* ion-card-subtitle {
     color: #1f94db;
     font-weight: bold;
-}
+} */
 
 ion-col h2 {
     font-size: 17px; 
@@ -451,9 +451,9 @@ ion-text h2 small {
     color: #fff;
 }
 
-.attend_profile ion-card-subtitle {
+/* .attend_profile ion-card-subtitle {
     color: #fff;
-}
+} */
 
 .Timesheets_modal{
     z-index: -1;

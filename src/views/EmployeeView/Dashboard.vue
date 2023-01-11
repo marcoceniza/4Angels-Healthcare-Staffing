@@ -29,12 +29,12 @@
                 <ion-menu-button slot="start"></ion-menu-button>
                 <ion-buttons slot="end">
                     <ion-avatar @click="$router.push('/employee/profile')">
-                        <img :src="user.profile_img"/>
+                        <img :src="user.employee_profilepicture"/>
                     </ion-avatar>
                 </ion-buttons>
             </ion-toolbar>
             <ion-toolbar>
-                <ion-text class="ion-padding-start ion-margin-top" color="primary">{{ user.firstname }} {{ user.lastname }}</ion-text>
+                <ion-text class="ion-padding-start ion-margin-top" color="primary">{{ user.employee_firstname }} {{ user.employee_lastname }}</ion-text>
                 <p class="ion-padding-start">{{ getMonthToday }} {{ new Date().getDate() }}, {{ new Date().getFullYear() }}</p>
             </ion-toolbar>
         </ion-header>
@@ -157,7 +157,7 @@ import { defineComponent } from 'vue';
 import { IonContent, IonPage, IonHeader, IonToolbar, IonCard, IonCardHeader, IonCardTitle, menuController, actionSheetController, IonButtons, IonMenu, IonMenuButton, IonSegment, IonSegmentButton, IonRefresher, IonRefresherContent, IonIcon, IonRouterOutlet, IonTitle, IonLabel, IonItem, IonList, IonAvatar, IonCol, IonRow, IonGrid, IonText } from '@ionic/vue';
 import { apps, map, chatbox, settings, ticket, helpCircle, logOut, alertCircle, warning, menu, reader, checkmarkCircle, location, time, calendar, calendarClear, navigate, person } from 'ionicons/icons';
 import { lStore, axios, formatDateString,dateFormat, openToast } from '@/functions';
-import { Geolocation } from '@capacitor/geolocation';
+// import { Geolocation } from '@capacitor/geolocation';
 
 export default defineComponent({
     name: 'DashboardView',
@@ -267,35 +267,20 @@ export default defineComponent({
             }
 
             if(this.disabled2) return;
-            const coordinates = await Geolocation.getCurrentPosition({enableHighAccuracy:true});
-
-            // let dist = calcFlyDist([
-            //     coordinates.coords.longitude,
-            //     coordinates.coords.latitude
-            // ],[
-            //     this.nextSched.location_long,
-            //     this.nextSched.location_lat
-            // ]);
-
-            // if(dist > 0.2) {
-            //     openToast('You must be at least 200 meters closer to the location to time out!','warning');
-            //     console.log(dist);
-            //     return;
-            // }
-        
+            // const coordinates = await Geolocation.getCurrentPosition({enableHighAccuracy:true});
 
             this.clockIn = new Date().toLocaleTimeString();
             this.disabled = false;
             this.disabled2 = true;
-            axios.post('timerecord/create',null,{
-                schedule_id: this.nextSched.id,
-                user_id: lStore.get('user_id'),
-                location: await this.mapFind(coordinates.coords.longitude,coordinates.coords.latitude),
-                location_lat:coordinates.coords.latitude,
-                location_long:coordinates.coords.longitude,
-            }).then(res=>{
-                lStore.set('timerecord_timein',res.data.result);
-            })
+            // axios.post('timerecord/create',null,{
+            //     schedule_id: this.nextSched.id,
+            //     user_id: lStore.get('user_id'),
+            //     location: await this.mapFind(coordinates.coords.longitude,coordinates.coords.latitude),
+            //     location_lat:coordinates.coords.latitude,
+            //     location_long:coordinates.coords.longitude,
+            // }).then(res=>{
+            //     lStore.set('timerecord_timein',res.data.result);
+            // })
         },
         openMenu() {
             menuController.open('app-menu');
@@ -309,7 +294,7 @@ export default defineComponent({
             menuController.close('app-menu');
         },
         async presentActionSheet(){
-            const coordinates = await Geolocation.getCurrentPosition();
+            // const coordinates = await Geolocation.getCurrentPosition();
             const actionSheet = await actionSheetController.create({
                 header: 'Are you sure you want to Clock Out?',
                 buttons: [
@@ -333,34 +318,21 @@ export default defineComponent({
             await actionSheet.present();
             const result = await actionSheet.onDidDismiss();
             if(result.data.action == 'confirm') {
-                // let dist = calcFlyDist([
-                //     coordinates.coords.longitude,
-                //     coordinates.coords.latitude
-                // ],[
-                //     this.nextSched.location_long,
-                //     this.nextSched.location_lat
-                // ]);
-
-                // if(dist > 0.2) {
-                //     openToast('You must be at least 200 meters closer to the location to time out!','warning');
-                //     console.log(dist);
-                //     return;
-                // }
 
                 this.clockOut = new Date().toLocaleTimeString();
                 this.disabled = true;
-                axios.post('timerecord/update?id='+lStore.get('timerecord_timein').id,null,{
-                    time_out:"",
-                    location_out: await this.mapFind(coordinates.coords.longitude,coordinates.coords.latitude),
-                    location_out_lat:coordinates.coords.latitude,
-                    location_out_long:coordinates.coords.longitude,
-                }).then(()=>{
-                    localStorage.removeItem('timerecord_timein');
-                    localStorage.removeItem('timerecord_timeout');
+                // axios.post('timerecord/update?id='+lStore.get('timerecord_timein').id,null,{
+                //     time_out:"",
+                //     location_out: await this.mapFind(coordinates.coords.longitude,coordinates.coords.latitude),
+                //     location_out_lat:coordinates.coords.latitude,
+                //     location_out_long:coordinates.coords.longitude,
+                // }).then(()=>{
+                //     localStorage.removeItem('timerecord_timein');
+                //     localStorage.removeItem('timerecord_timeout');
 
-                    window.location.reload();
+                //     window.location.reload();
 
-                })
+                // })
             }
         },
         async fetchScheds(){
@@ -374,20 +346,20 @@ export default defineComponent({
             let weekDateArr = weekDate.split('/');
             let weekDateString = formatDateString(weekDateArr[2]+'-'+weekDateArr[0]+'-'+weekDateArr[1]).replaceAll(' ','');
 
-            let resp = await axios.post(`assigned/joint?range=${currentDateString},${weekDateString}&_batch=true&user_id=${lStore.get('user_id')}`);
+            let resp = await axios.post(`assigned/joint?_GTE_schedules_dates=${currentDateString}&_LSE_schedules_dates=${weekDateString}&_batch=true&assigned_assigndesignation:assigndesignation_employeeid=${lStore.get('user_id')}`);
+            console.log(resp.data.result);
             if(resp.data == null || !resp.data.success) return;
             let updatedAssignedResults = [];
             let unfinishedTimerecords = [];
             let timerecordIds = {};
-            let resp2 = await axios.post(`timerecord?_select=id,time_in,time_out,schedule_id&_batch=true&user_id=${lStore.get('user_id')}&_LSE_time_in=${weekDateString}&_orderby=time__in_ASC&_limit=10`);
-            if(resp2.data != null && resp2.data.success) {
-                resp2.data.result.forEach(el=>{
-                    timerecordIds[el.schedule_id] = el;
+            if(resp.data != null && resp.data.success) {
+                resp.data.result.forEach(el=>{
+                    timerecordIds[el.assignschedules_id] = el;
                     lStore.set('timerecord_timein',el);
                 });
                 for(let t in timerecordIds)
                 if(resp.data.result.filter(el=>el.id==t).length == 0)
-                    if(timerecordIds[t].time_out == null)
+                    if(timerecordIds[t].assignschedules_timeout == null)
                         unfinishedTimerecords.push(t);
             }
 
@@ -405,36 +377,34 @@ export default defineComponent({
                     if(timerecordIds[el.id] != null){
                         if(timerecordIds[el.id].time_out == null) updatedAssignedResults.push(el);
                     }else{
-                        
                         updatedAssignedResults.push(el);
                     }
                 }
             });
 
-            let finishedPendingTimerecord = false;
-
-            unfinishedTimerecords.forEach(async (el)=>{
-                let resp3 = await axios.post(`schedule?_select=
-                mobile_schedule.id,
-                title,
-                description,
-                max_employees,
-                shift_start,
-                shift_end,
-                shift_date,
-                status,
-                branch_id,
-                color,
-                mobile_branches.location,
-                mobile_branches.name&id=${el}&_joins=mobile_branches&_on=mobile_schedule.branch_id=mobile_branches.id`);
-                if(resp3.data == null || !resp3.data.success) return;
-                updatedAssignedResults = [resp3.data.result,...updatedAssignedResults];
-                if(new Date(updatedAssignedResults[0].shift_date) <= new Date(currentDateString) && (this.nextSched == null || !finishedPendingTimerecord)) this.nextSched = updatedAssignedResults[0];
-                finishedPendingTimerecord = true;
-                this.upcoming = updatedAssignedResults;
-                this.clockIn = new Date(timerecordIds[el].time_in).toLocaleTimeString();
+            // let finishedPendingTimerecord = false;
+            // unfinishedTimerecords.forEach(async (el)=>{
+            //     let resp3 = await axios.post(`schedule?_select=
+            //     mobile_schedule.id,
+            //     title,
+            //     description,
+            //     max_employees,
+            //     shift_start,
+            //     shift_end,
+            //     shift_date,
+            //     status,
+            //     branch_id,
+            //     color,
+            //     mobile_branches.location,
+            //     mobile_branches.name&id=${el}&_joins=mobile_branches&_on=mobile_schedule.branch_id=mobile_branches.id`);
+            //     if(resp3.data == null || !resp3.data.success) return;
+            //     updatedAssignedResults = [resp3.data.result,...updatedAssignedResults];
+            //     if(new Date(updatedAssignedResults[0].shift_date) <= new Date(currentDateString) && (this.nextSched == null || !finishedPendingTimerecord)) this.nextSched = updatedAssignedResults[0];
+            //     finishedPendingTimerecord = true;
+            //     this.upcoming = updatedAssignedResults;
+            //     this.clockIn = new Date(timerecordIds[el].time_in).toLocaleTimeString();
                 
-            });
+            // });
 
             if(updatedAssignedResults.length > 0) 
                 if(new Date(updatedAssignedResults[0].shift_date) <= new Date(currentDateString)) this.nextSched = updatedAssignedResults[0];
@@ -524,10 +494,10 @@ ion-card-title {
     color: #1f94db;
 }
 
-ion-card-subtitle {
+/* ion-card-subtitle {
     color: #999;
     font-weight: bold;
-}
+} */
 
 ion-text {
     font-size: 30px;
@@ -593,10 +563,10 @@ ion-card img {
     margin: auto;
 }
 
-ion-card-subtitle {
+/* ion-card-subtitle {
     color: #1f94db;
     font-weight: bold;
-}
+} */
 
 .time-wrap {
     border-radius: 30px;

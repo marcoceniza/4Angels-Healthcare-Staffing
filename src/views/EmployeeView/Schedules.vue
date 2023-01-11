@@ -6,9 +6,9 @@
             <div class="Schedule_modal_box">
                 <h2>{{openedSchedule.title}}</h2>
                 <div class="grid">
-                    <p>Schedule Date:</p><div><span>{{dateFormat('%lm %d, %y','2022-01-01 '+openedSchedule.shift_date)}}</span></div>
+                    <!-- <p>Schedule Date:</p><div><span>{{dateFormat('%lm %d, %y','2022-01-01 '+openedSchedule.shift_date)}}</span></div>
                     <p>Schedule Start:</p><div><span>{{dateFormat('%h:%i%a','2022-01-01 '+openedSchedule.shift_start)}}</span></div>
-                    <p>Schedule End:</p><div><span>{{dateFormat('%h:%i%a','2022-01-01 '+openedSchedule.shift_end)}}</span></div>
+                    <p>Schedule End:</p><div><span>{{dateFormat('%h:%i%a','2022-01-01 '+openedSchedule.shift_end)}}</span></div> -->
                     <p>Branch:</p><div><span>{{openedSchedule.name}}</span></div>
                     <p>Branch Location:</p><div><span>{{openedSchedule.location}}</span></div>
                     <p>Roles:</p><div><small class="designation_chips" v-for="s,i in openedSchedule.designations" :key="i">{{s.position}}</small></div>
@@ -28,7 +28,7 @@
             <ion-toolbar class="main-header">
                 <ion-buttons slot="end">
                     <ion-avatar @click="$router.push('/employee/profile')">
-                        <img :src="user.profile_img"/>
+                        <img :src="user.employee_profilepicture"/>
                     </ion-avatar>
                 </ion-buttons>
                 <ion-title>Schedules</ion-title>
@@ -50,9 +50,9 @@
                 <ion-item button lines="none" @click="openActionSheet(st.id)" :style="'border-left: 6px solid '+st.color">
                     <ion-label>
                         <h2>{{st.title}}</h2>
-                        <p>Start Time: {{dateFormat('%h:%i%a',selectedDate+' '+st.shift_start)}}</p>
+                        <!-- <p>Start Time: {{dateFormat('%h:%i%a',selectedDate+' '+st.shift_start)}}</p>
                         <p>End Time: {{dateFormat('%h:%i%a',selectedDate+' '+st.shift_end)}}</p>
-                        <p>Date: {{dateFormat('%lm %d, %y',selectedDate)}}</p>
+                        <p>Date: {{dateFormat('%lm %d, %y',selectedDate)}}</p> -->
                         <div class="designation_chips_cont"><div class="designation_chips" v-for="s,i in st.designations" :key="i">{{s.position}}</div></div>
                     </ion-label>
                 </ion-item>
@@ -64,8 +64,8 @@
 
 <script>
 import { defineComponent } from 'vue';
-import { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, actionSheetController, IonTitle, IonButtons, IonRefresher, IonRefresherContent, IonButton, IonAvatar, IonLabel, IonItem, IonList } from '@ionic/vue';
-import { axios, lStore,dateFormat, openToast } from '@/functions';
+import { IonContent, IonPage, IonHeader, IonToolbar, IonDatetime, IonTitle, IonButtons, IonRefresher, IonRefresherContent, IonButton, IonAvatar, IonLabel, IonItem, IonList } from '@ionic/vue';
+import { lStore } from '@/functions';
 
 export default defineComponent({
     name: 'SchedulesView',
@@ -104,147 +104,147 @@ export default defineComponent({
         this.user = lStore.get('user_info');
     },
     mounted() {
-        const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-        let month = months[new Date().getMonth()].toUpperCase();
-        this.getMonthToday = month;
+        // const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        // let month = months[new Date().getMonth()].toUpperCase();
+        // this.getMonthToday = month;
 
-        let date = new Date().toLocaleDateString();
-        date = date.split('/')[2]+'-'+date.split('/')[0]+'-'+date.split('/')[1];
-        this.selectedDate = date;
+        // let date = new Date().toLocaleDateString();
+        // date = date.split('/')[2]+'-'+date.split('/')[0]+'-'+date.split('/')[1];
+        // this.selectedDate = date;
 
-        this.allowedRoles = [];
+        // this.allowedRoles = [];
 
-        axios.post(`userDesignations?_batch=true&user_id=${lStore.get('user_id')}`).then(res=>{
-            if(res.data.result == null) return;
-            this.allowedRoles = res.data.result;
-        });
+        // axios.post(`userDesignations?_batch=true&user_id=${lStore.get('user_id')}`).then(res=>{
+        //     if(res.data.result == null) return;
+        //     this.allowedRoles = res.data.result;
+        // });
 
-        axios.post(`assigned/joint?range=${date}&_batch=true&exclude_timerecord`).then(res=>{
-            if(res.data.result == null) {
-                this.schedulesToday = [];
-                return;
-            }
-            this.schedulesToday = [];
-            res.data.result.forEach(el=>{
-                let filteredDesignations = [];
-                this.allowedRoles.forEach(el2=>{
-                    el.designations.forEach(el3=>{
-                        if(el3.designation_id != el2.designation_id) return;
-                        if(el2.branch_id != el.branch_id) return;
-                        filteredDesignations.push(el3);
-                    });
-                });
-                console.log(filteredDesignations);
-                if(filteredDesignations.length > 0) this.schedulesToday.push(el);
-            });
-        })
+        // axios.post(`assigned/joint?range=${date}&_batch=true&exclude_timerecord`).then(res=>{
+        //     if(res.data.result == null) {
+        //         this.schedulesToday = [];
+        //         return;
+        //     }
+        //     this.schedulesToday = [];
+        //     res.data.result.forEach(el=>{
+        //         let filteredDesignations = [];
+        //         this.allowedRoles.forEach(el2=>{
+        //             el.designations.forEach(el3=>{
+        //                 if(el3.designation_id != el2.designation_id) return;
+        //                 if(el2.branch_id != el.branch_id) return;
+        //                 filteredDesignations.push(el3);
+        //             });
+        //         });
+        //         console.log(filteredDesignations);
+        //         if(filteredDesignations.length > 0) this.schedulesToday.push(el);
+        //     });
+        // })
     },
     methods: {
-        dateFormat,
-        async openActionSheet(id) {
-            let selectedSched = this.schedulesToday.filter(el=>el.id == id);
-            selectedSched = selectedSched[0];
-            let actionSheetButtons = [
-                {
-                    text: 'View Schedule Details',
-                    data: {
-                        action: 'view',
-                    },
-                },
-                {
-                    text: 'Cancel',
-                    role: 'cancel',
-                    data: {
-                        action: 'cancel',
-                    },
-                }
-            ];
+        // dateFormat,
+        // async openActionSheet(id) {
+        //     let selectedSched = this.schedulesToday.filter(el=>el.id == id);
+        //     selectedSched = selectedSched[0];
+        //     let actionSheetButtons = [
+        //         {
+        //             text: 'View Schedule Details',
+        //             data: {
+        //                 action: 'view',
+        //             },
+        //         },
+        //         {
+        //             text: 'Cancel',
+        //             role: 'cancel',
+        //             data: {
+        //                 action: 'cancel',
+        //             },
+        //         }
+        //     ];
 
-            if(!this.hasAlreadyApplied(selectedSched)){
-                actionSheetButtons.push({
-                    text: 'Apply Shift',
-                    data: {
-                        action: 'apply',
-                    }
-                });
-            }else{
-                actionSheetButtons.push({
-                    text: 'Request Change',
-                    data: {
-                        action: 'request change',
-                    }
-                });
-            }
+        //     if(!this.hasAlreadyApplied(selectedSched)){
+        //         actionSheetButtons.push({
+        //             text: 'Apply Shift',
+        //             data: {
+        //                 action: 'apply',
+        //             }
+        //         });
+        //     }else{
+        //         actionSheetButtons.push({
+        //             text: 'Request Change',
+        //             data: {
+        //                 action: 'request change',
+        //             }
+        //         });
+        //     }
 
-            const openSheet = await actionSheetController.create({
-                header: 'Schedule Action',
-                buttons: actionSheetButtons,
-            });
+        //     const openSheet = await actionSheetController.create({
+        //         header: 'Schedule Action',
+        //         buttons: actionSheetButtons,
+        //     });
 
-            await openSheet.present();
-            openSheet.onDidDismiss().then(res=>{
-                if(res.data == null) return;
-                if(res.data.action == 'cancel') return;
-                if(res.data.action == 'apply') {
-                    let schedEnd = new Date(selectedSched.shift_date+' '+selectedSched.shift_end).getTime();
-                    let curDateTime = new Date().getTime();
-                    if(curDateTime >= schedEnd) {
-                        openToast('You cannot apply for a schedule that\'s already finished!','warning');
-                        return;
-                    }
-                    axios.post('assigned/create',null,{
-                        user_id: lStore.get('user_id'),
-                        schedule_id: id,
-                        status: 3
-                    }).then(()=>{
-                        window.location.reload();
-                    })
-                }else if(res.data.action == 'view'){
-                    this.openedSchedule = selectedSched;
-                    this.openModal = true;
-                }
-            });
+        //     await openSheet.present();
+        //     openSheet.onDidDismiss().then(res=>{
+        //         if(res.data == null) return;
+        //         if(res.data.action == 'cancel') return;
+        //         if(res.data.action == 'apply') {
+        //             let schedEnd = new Date(selectedSched.shift_date+' '+selectedSched.shift_end).getTime();
+        //             let curDateTime = new Date().getTime();
+        //             if(curDateTime >= schedEnd) {
+        //                 openToast('You cannot apply for a schedule that\'s already finished!','warning');
+        //                 return;
+        //             }
+        //             axios.post('assigned/create',null,{
+        //                 user_id: lStore.get('user_id'),
+        //                 schedule_id: id,
+        //                 status: 3
+        //             }).then(()=>{
+        //                 window.location.reload();
+        //             })
+        //         }else if(res.data.action == 'view'){
+        //             this.openedSchedule = selectedSched;
+        //             this.openModal = true;
+        //         }
+        //     });
 
-        },
-        setOpen() {
-            this.isOpen = true;
-        },
-        hasAlreadyApplied(sched){
-            let emp = [];
-            if(sched.assignedEmps != null) emp = sched.assignedEmps.filter(el=>el.user_id == lStore.get('user_id'))
-            return emp.length > 0
-        },
-        handleRefresh(e){
-            this.setDate(this.selectedDate);
-            e.target.complete();
-        },
-        setDate(e){
-            let date = e;
-            if(e.target != null){
-                date = e.target.value.match(/^[0-9]+-[0-9]+-[0-9]+/)[0];
-                this.selectedDate = date;
-            }
+        // },
+        // setOpen() {
+        //     this.isOpen = true;
+        // },
+        // hasAlreadyApplied(sched){
+        //     let emp = [];
+        //     if(sched.assignedEmps != null) emp = sched.assignedEmps.filter(el=>el.user_id == lStore.get('user_id'))
+        //     return emp.length > 0
+        // },
+        // handleRefresh(e){
+        //     this.setDate(this.selectedDate);
+        //     e.target.complete();
+        // },
+        // setDate(e){
+        //     let date = e;
+        //     if(e.target != null){
+        //         date = e.target.value.match(/^[0-9]+-[0-9]+-[0-9]+/)[0];
+        //         this.selectedDate = date;
+        //     }
             
-            axios.post(`assigned/joint?range=${date}&_batch=true&exclude_timerecord`).then(res=>{
-                if(res.data.result == null) {
-                    this.schedulesToday = [];
-                    return;
-                }
-                this.schedulesToday = [];
-                res.data.result.forEach(el=>{
-                    let filteredDesignations = [];
-                    this.allowedRoles.forEach(el2=>{
-                        el.designations.forEach(el3=>{
-                            if(el3.designation_id != el2.designation_id) return;
-                            if(el2.branch_id != el.branch_id) return;
-                            filteredDesignations.push(el3);
-                        });
-                    });
-                    console.log(filteredDesignations);
-                    if(filteredDesignations.length > 0) this.schedulesToday.push(el);
-                });
-            })
-        }
+        //     axios.post(`assigned/joint?range=${date}&_batch=true&exclude_timerecord`).then(res=>{
+        //         if(res.data.result == null) {
+        //             this.schedulesToday = [];
+        //             return;
+        //         }
+        //         this.schedulesToday = [];
+        //         res.data.result.forEach(el=>{
+        //             let filteredDesignations = [];
+        //             this.allowedRoles.forEach(el2=>{
+        //                 el.designations.forEach(el3=>{
+        //                     if(el3.designation_id != el2.designation_id) return;
+        //                     if(el2.branch_id != el.branch_id) return;
+        //                     filteredDesignations.push(el3);
+        //                 });
+        //             });
+        //             console.log(filteredDesignations);
+        //             if(filteredDesignations.length > 0) this.schedulesToday.push(el);
+        //         });
+        //     })
+        // }
     }
 });
 </script>

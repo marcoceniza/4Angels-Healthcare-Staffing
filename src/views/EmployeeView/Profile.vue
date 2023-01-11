@@ -9,13 +9,14 @@
             </ion-buttons>
             <ion-header>Profile</ion-header>
             <ion-avatar>
-                <img :src="user.profile_img"/>
+                <img :src="user.employee_profilepicture" v-if="user.employee_profilepicture != 'https://www.4angelshc.com/mobile/filesystem/'"/>
+                <img src="../../images/profile.svg" v-else/>
                 <ion-buttons class="camera-icon">
                     <ion-icon :icon="camera" @click="setProfileImg"></ion-icon>
                 </ion-buttons>
                 <ion-spinner v-if="loadImage" class="load-img" name="dots"></ion-spinner>
             </ion-avatar>
-            <h2 class="title_name">{{ user.firstname }} {{ user.lastname }}<span>{{ user.role }}</span></h2>
+            <h2 class="title_name">{{ user.employee_firstname }} {{ user.employee_lastname }}<span></span></h2>
         </ion-toolbar>
         <ion-content fullscreen="true">
             <ion-refresher style="position:relative; z-index:999;" slot="fixed" @ionRefresh="handleRefresh($event)">
@@ -25,16 +26,16 @@
             <ion-list class="ion-margin-top">
                 <ion-item lines="full">
                     <ion-icon :icon="mail" slot="start" color="medium"></ion-icon>
-                    <ion-label>{{ user.email_address }}</ion-label>
+                    <ion-label>{{ user.employee_emailaddress }}</ion-label>
                 </ion-item>
                 <ion-item lines="full">
                     <ion-icon :icon="call" slot="start" color="medium"></ion-icon>
-                    <ion-label>{{ user.phonenumber }}</ion-label>
+                    <ion-label>{{ user.employee_phonenumber }}</ion-label>
                 </ion-item>
-                <ion-item lines="full">
+                <!-- <ion-item lines="full">
                     <ion-icon :icon="location" slot="start" color="medium"></ion-icon>
-                    <ion-label>{{ user.address }}</ion-label>
-                </ion-item>
+                    <ion-label>{{ user.employee_address }}</ion-label>
+                </ion-item> -->
             </ion-list>
             <ion-grid>
                 <ion-row>
@@ -57,7 +58,7 @@
                     <div class="file_vwr_ctrl">
                         <button class="bulkSelect"  :class="{active:bulkSelect}" @click="bulkSelect = !bulkSelect;chosenFile=[]">Bulk Select: {{bulkSelect ? 'On': 'Off'}}</button>
                         <button class="delete" @click="deleteSelected" v-if="chosenFile.length>0">Delete</button> 
-                        <a :href="this.cifile+this.user.id+'/'+chosenFile[0]" download="true" v-if="!bulkSelect && chosenFile.length == 1">Download</a>
+                        <a :href="this.cifile+this.user.employee_id+'/'+chosenFile[0]" download="true" v-if="!bulkSelect && chosenFile.length == 1">Download</a>
                     </div>
                     <div class="file_vwr">
                         <div class="file_itm" v-for="f in files" :key="f" @click="addToChosen(f)">
@@ -102,20 +103,20 @@
                     <ion-list>
                         <ion-item>
                             <ion-label position="stacked">Firstname</ion-label>
-                            <ion-input v-model="user.firstname"></ion-input>
+                            <ion-input v-model="user.employee_firstname"></ion-input>
                         </ion-item>
                         <ion-item>
                             <ion-label position="stacked">Lastname</ion-label>
-                            <ion-input v-model="user.lastname"></ion-input>
+                            <ion-input v-model="user.employee_lastname"></ion-input>
                         </ion-item>
                         <ion-item>
                             <ion-label position="stacked">Email</ion-label>
-                            <ion-input v-model="user.email_address"></ion-input>
+                            <ion-input v-model="user.employee_emailaddress"></ion-input>
                         </ion-item>
-                        <ion-item>
+                        <!-- <ion-item>
                             <ion-label position="stacked">Address</ion-label>
                             <ion-input v-model="user.address"></ion-input>
-                        </ion-item>
+                        </ion-item> -->
                     </ion-list>
                     <ion-grid>
                         <ion-row>
@@ -169,9 +170,9 @@ export default defineComponent({
     created() {
         this.clear();
         this.user = lStore.get('user_info');
-
-        this.path = this.cifile+this.user.id;
-        this.relativePath = this.user.id;
+        console.log(this.user.employee_profilepicture);
+        this.path = this.cifile+this.user.employee_id;
+        this.relativePath = this.user.employee_id;
         axios.post('files?path='+this.relativePath).then(res=>{
             this.files = res.data;
         });
@@ -191,7 +192,7 @@ export default defineComponent({
             this.isOpen2 = isOpen2;
         },
         updateProfile() {
-            axios.post('users/update?id='+lStore.get('user_id'),null, this.user).then(res => {
+            axios.post('employee/update?id='+lStore.get('user_id'),null, this.user).then(res => {
                 if(!res.data.success) return;
                 openToast('Profile Information Updated!', 'light');
                 setTimeout(() => {
@@ -360,12 +361,12 @@ export default defineComponent({
                 if(res.data.action == 'confirm') {
                     axiosA({
                         method:'post',
-                        url: 'https://4angelshc.com/mobile/users/update?id='+lStore.get('user_id'),
+                        url: 'https://4angelshc.com/mobile/employee/update?id='+lStore.get('user_id'),
                         data : form
                     }).then(()=>{
                         this.loadImage = true;
                         let userFromLStore = lStore.get('user_info')
-                        userFromLStore.profile_img = image.dataUrl;
+                        userFromLStore.employee_profilepicture = image.dataUrl;
                         lStore.set('user_info', userFromLStore);
                         window.location.reload();
                     })
